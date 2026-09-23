@@ -6,7 +6,7 @@
 <title>Tokyo Rain</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&family=Noto+Serif+JP:wght@600;900&family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
   :root { --neon:#ff2d95; --cyan:#00e5ff; }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -23,21 +23,37 @@
   #intro h1 { font-weight:300; letter-spacing:.6em; font-size:clamp(14px,2.4vw,20px); margin-right:-.6em; color:#e6f6ff;
     text-shadow:0 0 12px var(--cyan), 0 1px 3px #000; }
   #intro p { font-size:13px; opacity:.8; letter-spacing:.1em; min-height:1.2em; text-shadow:0 1px 3px #000; }
-  #enter { margin-top:12px; padding:14px 34px; font:500 14px Inter,sans-serif; letter-spacing:.3em; color:#fff;
+  .enters { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:12px; }
+  .enters button { padding:14px 30px; font:500 13px Inter,sans-serif; letter-spacing:.3em; color:#fff;
     background:#0a142866; border:1px solid #ffffff77; border-radius:40px; cursor:pointer; transition:.3s;
     box-shadow:0 0 20px #00e5ff33 inset; backdrop-filter:blur(4px); }
-  #enter:hover:not(:disabled) { border-color:var(--cyan); box-shadow:0 0 24px #00e5ff88, 0 0 20px #00e5ff55 inset; }
-  #enter:disabled { opacity:.3; cursor:wait; }
+  .enters button:hover:not(:disabled) { border-color:var(--cyan); box-shadow:0 0 24px #00e5ff88, 0 0 20px #00e5ff55 inset; }
+  .enters button:disabled { opacity:.3; cursor:wait; }
   .hints { font-size:12px; opacity:.8; line-height:1.9; margin-top:10px; letter-spacing:.05em; text-shadow:0 1px 3px #000; }
 
-  #hud { position:fixed; top:max(14px,env(safe-area-inset-top)); right:14px; display:flex; gap:8px; z-index:20; }
+  #hud { position:fixed; top:max(14px,env(safe-area-inset-top)); right:14px; display:flex; flex-wrap:wrap; justify-content:flex-end;
+    gap:8px; z-index:20; max-width:calc(100vw - 28px); }
   #hud button { background:#0b1020aa; color:#dfe8ff; border:1px solid #ffffff33; border-radius:20px; padding:8px 14px;
-    font:500 11px Inter,sans-serif; letter-spacing:.15em; cursor:pointer; backdrop-filter:blur(6px); }
+    font:500 11px Inter,sans-serif; letter-spacing:.15em; cursor:pointer; backdrop-filter:blur(6px); white-space:nowrap; }
+  #seasons { display:flex; background:#0b1020aa; border:1px solid #ffffff33; border-radius:20px; padding:2px; backdrop-filter:blur(6px); }
+  #seasons button { border:none; background:none; padding:6px 10px; font-size:14px; letter-spacing:0; border-radius:16px; opacity:.55; }
+  #seasons button.on { background:#ffffff26; opacity:1; }
   #snd { display:none; }
   #help { position:fixed; left:50%; bottom:max(16px,env(safe-area-inset-bottom)); transform:translateX(-50%); font-size:11px;
     letter-spacing:.12em; opacity:0; transition:opacity 1.5s; pointer-events:none; white-space:nowrap; color:#fff;
     text-shadow:0 1px 4px #000; z-index:5; }
   #help.show { opacity:.75; }
+
+  /* cinematic letterbox + title cards */
+  .bar { position:fixed; left:0; right:0; height:0; background:#000; z-index:4; pointer-events:none;
+    transition:height 1.6s cubic-bezier(.6,0,.2,1); }
+  #barT { top:0; } #barB { bottom:0; }
+  body.cine .bar { height:clamp(0px, calc((100vh - 100vw / 2.1) / 2), 11vh); }
+  #card { position:fixed; left:50%; bottom:17%; transform:translateX(-50%); text-align:center; opacity:0; z-index:8;
+    transition:opacity 1.4s ease; pointer-events:none; color:#fff; text-shadow:0 2px 16px #000a; white-space:nowrap; }
+  #card.show { opacity:1; }
+  #card .k { font-family:"Noto Serif JP",serif; font-weight:900; font-size:clamp(38px,6.5vw,68px); letter-spacing:.25em; margin-right:-.25em; }
+  #card .t { font-weight:300; letter-spacing:.55em; font-size:12px; margin-top:8px; margin-right:-.55em; opacity:.9; }
 
   #joy { position:fixed; width:120px; height:120px; margin:-60px 0 0 -60px; border-radius:50%;
     border:1.5px solid #ffffff66; background:radial-gradient(circle, #ffffff18, #ffffff08); pointer-events:none;
@@ -51,7 +67,8 @@
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.1.0/lib/three-vrm.module.js"
 } }
 </script>
 </head>
@@ -61,12 +78,20 @@
 <div id="intro">
   <div class="kanji">東京・雨</div>
   <h1>TOKYO RAIN</h1>
-  <p id="status">Building the city…</p>
-  <button id="enter" disabled>ENTER</button>
+  <p id="status">Building the world…</p>
+  <div class="enters"><button id="enter" disabled>ENTER TOKYO</button><button id="enter2" disabled>FUJI VILLAGE</button></div>
   <div class="hints" id="hints"></div>
 </div>
-<div id="hud"><button id="mode">☾ NIGHT</button><button id="snd">SOUND ON</button></div>
+<div id="hud">
+  <button id="loc">🗻 FUJI VILLAGE</button>
+  <div id="seasons">
+    <button data-s="spring" title="Spring blossom (1)">🌸</button><button data-s="rainy" title="Rainy season (2)">☔</button><button data-s="autumn" title="Autumn (3)">🍁</button><button data-s="winter" title="Winter (4)">❄️</button>
+  </div>
+  <button id="mode">☾ NIGHT</button><button id="snd">SOUND ON</button>
+</div>
 <div id="help"></div>
+<div class="bar" id="barT"></div><div class="bar" id="barB"></div>
+<div id="card"><div class="k"></div><div class="t"></div></div>
 <div id="joy"><div id="knob"></div></div>
 <div id="fade"></div>
 
@@ -80,6 +105,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
 /* =====================================================================
    CONFIG
@@ -87,7 +113,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const V3 = THREE.Vector3;
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const LOW = IS_TOUCH;                       // lighter settings on phones
-const CHARACTER_URL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/Soldier.glb';
+const CHARACTER_URL = './shino.vrm';        // "Sendagaya Shino" — VRoid sample model, CC0
 const JP = '"Noto Sans JP","Yu Gothic","Hiragino Sans","Meiryo",sans-serif';
 
 // City layout (metres). Avenues run along Z, cross streets along X.
@@ -95,9 +121,11 @@ const AVES = [-70, 0, 70], CROSS = [-124, -62, 0, 62, 124];
 const ROAD = 7, WALK = 4, SET = ROAD + WALK;          // half road width, sidewalk width, building setback
 const W_MIN = -81, W_MAX = 81, Z_MIN = -135, Z_MAX = 135; // walkable area
 const WALK_SPEED = 1.9, RUN_SPEED = 5.6;
-const SUN_DIR = new V3(0.2, 0.42, -0.88).normalize();  // afternoon sun, straight down the main avenue
+const SUN_DIR = new V3();                                              // set per location
+const SUN_TOKYO = new V3(0.2, 0.42, -0.88).normalize();                // afternoon sun, straight down the main avenue
+const SUN_VILLAGE = new V3(0.72, 0.4, -0.42).normalize();              // side-light Fuji from the right
 
-// Deterministic random so the city is the same every visit
+// Deterministic random so the world is the same every visit
 let seed = 20260923;
 const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const rr = (a, b) => a + (b - a) * rand();
@@ -106,6 +134,16 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 const lerpAngle = (a, b, t) => { let d = ((b - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; return a + d * t; };
 const lin = (r, g, b) => new THREE.Color().setRGB(r, g, b);   // linear colour
+const hex = h => new THREE.Color(h);                           // sRGB hex → linear
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const hash2 = (x, z) => { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); };
+function vnoise(x, z) {
+  const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi, u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+  const a = hash2(xi, zi), b = hash2(xi + 1, zi), c = hash2(xi, zi + 1), d = hash2(xi + 1, zi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+const fbm2 = (x, z) => vnoise(x, z) * 0.5 + vnoise(x * 2.1 + 5.2, z * 2.1 + 1.3) * 0.3 + vnoise(x * 4.3 + 9.1, z * 4.3 + 7.7) * 0.2;
+const UP = new V3(0, 1, 0);
 
 /* =====================================================================
    RENDERER / SCENE / CAMERA
@@ -138,21 +176,44 @@ Object.assign(sun.shadow.camera, { left: -48, right: 48, top: 48, bottom: -48, n
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
 scene.add(sun, sun.target);
 
+// The two locations live in their own groups; only one is visible at a time
+const tokyo = new THREE.Group(), village = new THREE.Group();
+scene.add(tokyo, village);
+
+// Snow cover: any material passed through snowy() turns white on upward-facing surfaces when SNOW > 0
+const SNOW = { value: 0 }, SNOW_COL = { value: lin(0.86, 0.9, 0.98) };
+function snowy(mat, k = 1) {
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (s, r) => {
+    prev.call(mat, s, r);
+    s.uniforms.uSnow = SNOW; s.uniforms.uSnowCol = SNOW_COL;
+    s.fragmentShader = 'uniform float uSnow; uniform vec3 uSnowCol;\n' + s.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+      { vec3 upV = normalize((viewMatrix*vec4(0.,1.,0.,0.)).xyz);
+        float sm = smoothstep(0.42, 0.78, dot(normal, upV)) * ${k.toFixed(2)};
+        diffuseColor.rgb = mix(diffuseColor.rgb, uSnowCol, uSnow*sm); }`);
+  };
+  const key = 'snowy' + k + prev.toString();
+  mat.customProgramCacheKey = () => key;
+  return mat;
+}
+
 // 3-step ramp → anime cel shading
 const toonRamp = new THREE.DataTexture(new Uint8Array([105, 105, 105, 255, 185, 185, 185, 255, 255, 255, 255, 255]), 3, 1);
 toonRamp.minFilter = toonRamp.magFilter = THREE.NearestFilter; toonRamp.needsUpdate = true;
-const toon = (params) => new THREE.MeshToonMaterial({ gradientMap: toonRamp, ...params });
+const toon = (params, snowK = 1) => { const m = new THREE.MeshToonMaterial({ gradientMap: toonRamp, ...params }); return snowK ? snowy(m, snowK) : m; };
 
 /* =====================================================================
-   SKY: painted gradient, cel-shaded clouds, sun, and a sun-shower rainbow
+   SKY: painted gradient, cel-shaded clouds, sun, rainbow, stars + moon
    ===================================================================== */
+const skyGroup = new THREE.Group(); scene.add(skyGroup);   // follows the camera: sky dome + Mount Fuji backdrop
 const skyMat = new THREE.ShaderMaterial({
   uniforms: {
     uTime: { value: 0 }, uSunDir: { value: SUN_DIR }, uTop: { value: new THREE.Color() }, uHor: { value: new THREE.Color() },
     uCloudLit: { value: new THREE.Color() }, uCloudShadow: { value: new THREE.Color() }, uSun: { value: 1 }, uRainbow: { value: 0 }, uCover: { value: 0.5 },
+    uStars: { value: 0 }, uMoonDir: { value: new V3(-0.35, 0.5, -0.8).normalize() },
   },
   vertexShader: `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-  fragmentShader: `uniform float uTime, uSun, uRainbow, uCover; uniform vec3 uSunDir, uTop, uHor, uCloudLit, uCloudShadow; varying vec3 vDir;
+  fragmentShader: `uniform float uTime, uSun, uRainbow, uCover, uStars; uniform vec3 uSunDir, uTop, uHor, uCloudLit, uCloudShadow, uMoonDir; varying vec3 vDir;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
     float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
       return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
@@ -162,8 +223,15 @@ const skyMat = new THREE.ShaderMaterial({
       vec3 col = mix(uHor, uTop, pow(clamp(h,0.,1.), 0.5));
       float sd = max(dot(d, uSunDir), 0.);
       col += uSun*(vec3(1.,.93,.8)*pow(sd,900.)*14. + vec3(1.,.86,.62)*pow(sd,10.)*.45);
-      // rainbow opposite the sun (sun-shower)
-      float ang = degrees(acos(clamp(dot(d, -uSunDir), -1., 1.)));
+      if (uStars > 0. && h > 0.) {                                  // clear-night stars and moon
+        vec3 s3 = d*260.; vec3 cell = floor(s3);
+        float r = fract(sin(dot(cell, vec3(12.9898,78.233,37.719)))*43758.5453);
+        float star = step(0.9975, r)*smoothstep(0.5, 0.1, length(fract(s3)-.5))*(0.5+0.5*sin(uTime*2.+r*90.));
+        col += uStars*star*vec3(.9,.95,1.)*2.*smoothstep(0.,.2,h);
+        float md = dot(d, uMoonDir);
+        col += uStars*(vec3(1.,.96,.86)*smoothstep(0.99955,0.9997,md)*4. + vec3(.35,.42,.6)*pow(max(md,0.),60.)*.35);
+      }
+      float ang = degrees(acos(clamp(dot(d, -uSunDir), -1., 1.)));  // rainbow opposite the sun (sun-shower)
       float rb = smoothstep(39.6, 40.6, ang)*(1.-smoothstep(42.4, 43.4, ang));
       vec3 rbc = 0.55 + 0.45*cos(6.2831*(clamp((ang-40.)/3.4,0.,1.)*0.8 + vec3(0.67,0.33,0.0)));
       col = mix(col, col + rbc*0.6, rb*uRainbow*smoothstep(0.,.08,h));
@@ -182,7 +250,63 @@ const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, fog: false,
 });
 const sky = new THREE.Mesh(new THREE.SphereGeometry(280, 48, 24), skyMat);
-sky.renderOrder = -1; sky.frustumCulled = false; scene.add(sky);
+sky.renderOrder = -2; sky.frustumCulled = false; skyGroup.add(sky);
+
+/* =====================================================================
+   MOUNT FUJI — a painted backdrop drawn right after the sky (no depth), so every
+   hill, house and the lake draw over its foot and it reads as infinitely far away
+   ===================================================================== */
+const fujiMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uSunDir: { value: SUN_DIR }, uSunCol: { value: new THREE.Color() }, uAmb: { value: new THREE.Color() }, uHaze: { value: new THREE.Color() },
+    uRock1: { value: new THREE.Color() }, uRock2: { value: new THREE.Color() }, uSnowLit: { value: new THREE.Color() }, uSnowShade: { value: new THREE.Color() },
+    uSnowLine: { value: 60 }, uHazeK: { value: 0.4 },
+  },
+  vertexShader: `varying vec3 vL, vN; void main(){ vL = position; vN = normalize(mat3(modelMatrix)*normal); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader: `uniform vec3 uSunDir, uSunCol, uAmb, uHaze, uRock1, uRock2, uSnowLit, uSnowShade; uniform float uSnowLine, uHazeK; varying vec3 vL, vN;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+    float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+      return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
+    void main(){
+      float a = atan(vL.z, vL.x);
+      float g = sin(a*46. + sin(a*9.)*2.5)*0.5 + 0.5;              // erosion gullies
+      float n = noise(vec2(a*16., vL.y*0.07)) ;
+      float line = uSnowLine - pow(g, 3.)*22. - n*9.;               // jagged snow fingers down the gullies
+      float snow = step(line, vL.y);
+      float l = dot(normalize(vN), uSunDir);
+      float lit = smoothstep(0.02, 0.1, l);                        // hard anime light/shadow split
+      vec3 rock = mix(uRock1, uRock2, n)*(0.88 + 0.12*g);
+      vec3 col = snow > .5 ? mix(uSnowShade, uSnowLit, lit) : rock*(uAmb + uSunCol*lit);
+      float haze = uHazeK*(1. - smoothstep(-20., 95., vL.y)*0.65);
+      gl_FragColor = vec4(mix(col, uHaze, clamp(haze, 0., 1.)), 1.);
+    }`,
+  depthWrite: false, fog: false,
+});
+const fuji = (() => {
+  const R = 190, H = 86, RINGS = 46, SEG = 176, pos = [], idx = [];
+  for (let i = 0; i <= RINGS; i++) {
+    const u = i / RINGS;
+    for (let j = 0; j <= SEG; j++) {
+      const a = j / SEG * Math.PI * 2;
+      let r, y;
+      if (i === 0) { r = R * 0.02; y = H * 0.915; }                                   // crater floor
+      else {
+        const uu = 0.03 + 0.97 * Math.pow(u, 1.15);
+        r = R * uu * (1 + 0.035 * Math.sin(a * 3 + 1) + 0.02 * Math.sin(a * 7 + 2));
+        y = H * Math.pow(1 - uu, 1.45) + H * 0.012 * Math.sin(a * 41 + Math.sin(a * 9) * 2) * Math.sin(uu * Math.PI);
+        if (i === 1) y += 0.8;                                                          // crater rim
+      }
+      pos.push(Math.cos(a) * r, y, Math.sin(a) * r);
+    }
+  }
+  for (let i = 0; i < RINGS; i++) for (let j = 0; j < SEG; j++) {
+    const A = i * (SEG + 1) + j, B = A + 1, C = A + SEG + 1, D = C + 1;
+    idx.push(A, B, C, B, D, C);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, fujiMat); m.position.set(-10, -33, -265); m.renderOrder = -1; m.frustumCulled = false;
+  skyGroup.add(m); return m;
+})();
 
 /* =====================================================================
    TEXTURE HELPERS (everything is generated — no image files needed)
@@ -263,7 +387,7 @@ function facadeNight(o) {
   }
   const map = new THREE.CanvasTexture(col), emissiveMap = new THREE.CanvasTexture(emi);
   for (const t of [map, emissiveMap]) { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = MAX_ANISO; }
-  return new THREE.MeshStandardMaterial({ map, emissiveMap, emissive: 0xffffff, emissiveIntensity: 1.5, roughness: 0.75, metalness: 0.1 });
+  return snowy(new THREE.MeshStandardMaterial({ map, emissiveMap, emissive: 0xffffff, emissiveIntensity: 1.5, roughness: 0.75, metalness: 0.1 }));
 }
 
 // Day facade: anime palette — pale walls, sky-blue glass with painted glare streaks, curtains, balconies
@@ -298,7 +422,83 @@ function facadeDay(o) {
 }
 
 /* =====================================================================
-   CITY GENERATION
+   SHARED MESH HELPERS
+   ===================================================================== */
+// Merge everything by material → a handful of draw calls per location
+function addMerged(list, mat, shadows, group = tokyo) {
+  if (!list.length) return null;
+  const same = list.some(g => !g.index) ? list.map(g => g.index ? g.toNonIndexed() : g) : list;
+  const m = new THREE.Mesh(mergeGeometries(same), mat);
+  if (shadows) m.castShadow = m.receiveShadow = true;
+  group.add(m); return m;
+}
+const faceAngle = n => Math.atan2(n.x, n.z);
+function plane(w, h, center, normal) { const p = new THREE.PlaneGeometry(w, h); p.rotateY(faceAngle(normal)); p.translate(center.x, center.y, center.z); return p; }
+function scaleUV(g, su, sv) { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv); return g; }
+
+// Box with world-scaled UVs so a wall texture tiles correctly on every building size
+function buildingBox(sx, sy, sz, off, T = 12, offZ = off) {
+  const g = new THREE.BoxGeometry(sx, sy, sz), p = g.attributes.position, n = g.attributes.normal, uv = g.attributes.uv;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i) + sy / 2, z = p.getZ(i);
+    if (Math.abs(n.getY(i)) > 0.5) uv.setXY(i, 0.004, 0.996);
+    else if (Math.abs(n.getX(i)) > 0.5) uv.setXY(i, (z + offZ) / T, y / T);
+    else uv.setXY(i, (x + off) / T, y / T);
+  }
+  return g;
+}
+
+/* =====================================================================
+   TREES (sakura / maple / pine) — foliage colour follows the season
+   ===================================================================== */
+const barkMat = toon({ color: 0x5b4334 });
+const sakuraMat = toon({ vertexColors: true, color: 0xffffff }, 0.8);
+const mapleMat = toon({ vertexColors: true, color: 0xffffff }, 0.8);
+const pineMat = toon({ color: 0x2f5c3c });
+const treeGeo = () => ({ trunk: [], sakura: [], maple: [], pine: [] });
+const TREES = { tokyo: treeGeo(), village: treeGeo() };
+function addTree(L, kind, x, y, z, s = 1) {
+  const T = TREES[L];
+  if (kind === 'pine') {
+    const tr = new THREE.CylinderGeometry(0.12 * s, 0.22 * s, 2.4 * s, 6); tr.translate(x, y + 1.2 * s, z); T.trunk.push(tr);
+    for (let k = 0; k < 3; k++) { const c = new THREE.ConeGeometry((2.0 - k * 0.52) * s, (2.6 - k * 0.35) * s, 8); c.rotateY(rand() * 3); c.translate(x, y + (2.3 + k * 1.3) * s, z); T.pine.push(c); }
+    return;
+  }
+  const h = (kind === 'sakura' ? 2.0 : 2.6) * s, lean = rr(-0.07, 0.07);
+  const tr = new THREE.CylinderGeometry(0.13 * s, 0.25 * s, h, 7); tr.translate(0, h / 2, 0); tr.rotateZ(lean); tr.translate(x, y, z); T.trunk.push(tr);
+  const top = new V3(x - Math.sin(lean) * h, y + h * Math.cos(lean), z);
+  const n = 5, a0 = rand() * 6.3;
+  for (let b = 0; b < n; b++) {
+    const ang = a0 + b / n * Math.PI * 2 + rr(-0.3, 0.3), tilt = kind === 'sakura' ? rr(0.85, 1.15) : rr(0.55, 0.85), len = rr(1.4, 2.0) * s;
+    const br = new THREE.CylinderGeometry(0.045 * s, 0.1 * s, len, 5); br.translate(0, len / 2, 0); br.rotateZ(-tilt); br.rotateY(ang); br.translate(top.x, top.y - 0.25 * s, top.z);
+    T.trunk.push(br);
+    const tip = new V3(Math.sin(tilt) * len * Math.cos(ang), Math.cos(tilt) * len, -Math.sin(tilt) * len * Math.sin(ang)).add(top);
+    for (let k = 0; k < 2; k++) {
+      const r = rr(0.9, 1.35) * s * (k ? 0.8 : 1), blob = new THREE.IcosahedronGeometry(r, 1);
+      blob.scale(1, kind === 'sakura' ? 0.62 : 0.82, 1);
+      blob.translate(tip.x + rr(-0.5, 0.5) * s, tip.y + (k ? 0.55 : 0.1) * s, tip.z + rr(-0.5, 0.5) * s);
+      const shade = rr(0.82, 1.08), cols = new Float32Array(blob.attributes.position.count * 3);
+      for (let i = 0; i < cols.length; i++) cols[i] = shade;
+      blob.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      T[kind].push(blob);
+    }
+  }
+  // crown on top
+  const crown = new THREE.IcosahedronGeometry(1.3 * s, 1); crown.scale(1, kind === 'sakura' ? 0.6 : 0.85, 1); crown.translate(top.x, top.y + 1.2 * s, top.z);
+  const cc = new Float32Array(crown.attributes.position.count * 3).fill(1.05); crown.setAttribute('color', new THREE.BufferAttribute(cc, 3));
+  T[kind].push(crown);
+}
+const foliage = { tokyo: {}, village: {} };
+function mergeTrees(L, group) {
+  const T = TREES[L];
+  addMerged(T.trunk, barkMat, true, group);
+  foliage[L].sakura = addMerged(T.sakura, sakuraMat, true, group);
+  foliage[L].maple = addMerged(T.maple, mapleMat, true, group);
+  foliage[L].pine = addMerged(T.pine, pineMat, true, group);
+}
+
+/* =====================================================================
+   TOKYO — CITY GENERATION
    ===================================================================== */
 const colliders = [];      // axis-aligned boxes the player can't enter {x0,x1,z0,z1}
 const lightSources = [];   // candidate positions for the pooled neon point lights (night)
@@ -326,21 +526,6 @@ const vmFrontMat = new THREE.MeshBasicMaterial({ toneMapped: false, map: canvasT
 }) });
 
 const geo = { build: facadeNightMats.map(() => []), roof: [], v: vMats.map(() => []), h: hMats.map(() => []), shop: shopMats.map(() => []), vmBody: [], vmFront: [], avi: [], pole: [], lampHead: [], cone: [] };
-
-const faceAngle = n => Math.atan2(n.x, n.z);
-function plane(w, h, center, normal) { const p = new THREE.PlaneGeometry(w, h); p.rotateY(faceAngle(normal)); p.translate(center.x, center.y, center.z); return p; }
-
-// Box with world-scaled UVs so the window texture tiles correctly on every building size
-function buildingBox(sx, sy, sz, off, T = 12) {
-  const g = new THREE.BoxGeometry(sx, sy, sz), p = g.attributes.position, n = g.attributes.normal, uv = g.attributes.uv;
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i) + sy / 2, z = p.getZ(i);
-    if (Math.abs(n.getY(i)) > 0.5) uv.setXY(i, 0.004, 0.996);
-    else if (Math.abs(n.getX(i)) > 0.5) uv.setXY(i, (z + off) / T, y / T);
-    else uv.setXY(i, (x + off) / T, y / T);
-  }
-  return g;
-}
 
 // Giant animated video screens (Shibuya-style)
 const screens = [
@@ -453,16 +638,18 @@ for (const a of AVES) for (const side of [-1, 1]) {
     }
   }
 }
-
-// Merge everything by material → only ~45 draw calls for the whole city
-function addMerged(list, mat, shadows) {
-  if (!list.length) return null;
-  const m = new THREE.Mesh(mergeGeometries(list), mat);
-  if (shadows) m.castShadow = m.receiveShadow = true;
-  scene.add(m); return m;
+// Street trees along the avenues (sakura / ginkgo-yellow in autumn / bare in winter)
+for (const a of AVES) for (const side of [-1, 1]) {
+  const x = a + side * (ROAD + 1.6);
+  for (let z = Z_MIN + 17; z < Z_MAX - 6; z += 18) {
+    if (CROSS.some(c => Math.abs(z - c) < ROAD + 5) || rand() < 0.2) continue;
+    addTree('tokyo', 'sakura', x, 0, z, rr(0.7, 0.82));
+    colliders.push({ x0: x - 0.25, x1: x + 0.25, z0: z - 0.25, z1: z + 0.25 });
+  }
 }
+
 const buildingMeshes = geo.build.map((l, i) => addMerged(l, facadeNightMats[i], true));
-const roofNightMat = new THREE.MeshStandardMaterial({ color: 0x1a1c22, roughness: 0.9 }), roofDayMat = toon({ color: 0xa3a8b0 });
+const roofNightMat = snowy(new THREE.MeshStandardMaterial({ color: 0x1a1c22, roughness: 0.9 })), roofDayMat = toon({ color: 0xa3a8b0 });
 const roofMesh = addMerged(geo.roof, roofNightMat, true);
 geo.v.forEach((l, i) => addMerged(l, vMats[i]));
 geo.h.forEach((l, i) => addMerged(l, hMats[i]));
@@ -485,7 +672,8 @@ const coneMesh = addMerged(geo.cone, new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
 }));
 const wireMat = new THREE.LineBasicMaterial({ color: 0x06080c });
-scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(wirePts), wireMat));
+tokyo.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(wirePts), wireMat));
+mergeTrees('tokyo', tokyo);
 
 // Video screens
 const screenCanvases = [0, 1].map(() => { const c = document.createElement('canvas'); c.width = 512; c.height = 288; return c; });
@@ -494,10 +682,10 @@ const screenLights = [], screenMats = [];
 for (const s of screens) {
   const ang = faceAngle(s.n);
   const frame = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.8, s.h + 0.8, 0.4), new THREE.MeshStandardMaterial({ color: 0x0c0d10, roughness: 0.6, metalness: 0.5 }));
-  frame.position.copy(s.pos).addScaledVector(s.n, 0.2); frame.rotation.y = ang; frame.castShadow = true; scene.add(frame);
+  frame.position.copy(s.pos).addScaledVector(s.n, 0.2); frame.rotation.y = ang; frame.castShadow = true; tokyo.add(frame);
   const mat = new THREE.MeshBasicMaterial({ map: screenTex[s.v], toneMapped: false }); screenMats.push(mat);
   const scr = new THREE.Mesh(new THREE.PlaneGeometry(s.w, s.h), mat);
-  scr.position.copy(s.pos).addScaledVector(s.n, 0.42); scr.rotation.y = ang; scene.add(scr);
+  scr.position.copy(s.pos).addScaledVector(s.n, 0.42); scr.rotation.y = ang; tokyo.add(scr);
   const src = { p: s.pos.clone().addScaledVector(s.n, 6).setY(s.pos.y - s.h / 2), c: new THREE.Color(), i: 160, v: s.v };
   lightSources.push(src); screenLights.push(src);
 }
@@ -508,7 +696,7 @@ function drawScreen(g, W, H, t, v) {
   g.fillStyle = gr; g.fillRect(0, 0, W, H);
   const tt = t + v * 3, phase = Math.floor(tt / 6) % 3, lt = (tt % 6) / 6;
   g.save(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.shadowColor = '#fff';
-  if (phase === 0) { g.shadowBlur = 30; g.font = `900 ${170 * (1 + 0.05 * Math.sin(t * 3))}px ${JP}`; g.fillText('雨', W / 2, H * 0.44); }
+  if (phase === 0) { g.shadowBlur = 30; g.font = `900 ${170 * (1 + 0.05 * Math.sin(t * 3))}px ${JP}`; g.fillText(SEASONS[season].screen, W / 2, H * 0.44); }
   else if (phase === 1) {
     g.shadowBlur = 20; g.font = `900 112px Inter, Arial Black, sans-serif`; g.fillText('TOKYO', W / 2 + (0.5 - lt) * 90, H * 0.4);
     g.font = `700 36px ${JP}`; g.shadowBlur = 8; g.fillText('東京・ナイトシティ', W / 2, H * 0.7);
@@ -521,7 +709,7 @@ function drawScreen(g, W, H, t, v) {
   g.restore();
   g.fillStyle = '#0009'; g.fillRect(0, H - 40, W, 40);
   g.font = `700 22px ${JP}`; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = '#ffe66b';
-  const msg = '  ◆ 本日は雨  RAIN ALL DAY  ◆ 東京へようこそ  WELCOME TO TOKYO  ◆ 渋谷 → 新宿  ';
+  const msg = '  ◆ 東京へようこそ  WELCOME TO TOKYO  ◆ 富士山まで 100km  MT. FUJI  ◆ 渋谷 → 新宿  ';
   const mw = g.measureText(msg).width, off = -((t * 90) % mw);
   g.fillText(msg, off, H - 20); g.fillText(msg, off + mw, H - 20);
   g.fillStyle = '#0003'; for (let y = 0; y < H; y += 3) g.fillRect(0, y, W, 1);
@@ -529,7 +717,7 @@ function drawScreen(g, W, H, t, v) {
 }
 
 /* =====================================================================
-   WET GROUND: mirror reflection underneath a semi-transparent asphalt layer
+   TOKYO WET GROUND: mirror reflection underneath a semi-transparent asphalt layer
    ===================================================================== */
 const groundTex = (() => {
   const PX = 6, W = (W_MAX - W_MIN) * PX, H = (Z_MAX - Z_MIN) * PX;
@@ -587,7 +775,7 @@ const mirror = new Reflector(new THREE.PlaneGeometry(W_MAX - W_MIN, Z_MAX - Z_MI
   textureWidth: innerWidth * renderer.getPixelRatio() * mirrorScale, textureHeight: innerHeight * renderer.getPixelRatio() * mirrorScale,
 });
 mirror.rotation.x = -Math.PI / 2;
-scene.add(mirror);
+tokyo.add(mirror);
 
 const groundGeo = new THREE.PlaneGeometry(W_MAX - W_MIN, Z_MAX - Z_MIN); groundGeo.rotateX(-Math.PI / 2);
 const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({
@@ -598,13 +786,364 @@ ground.receiveShadow = true;
 // Keep a roughness floor: near-mirror GGX highlights overflow the half-float buffer and bloom smears them into a black screen.
 // The mirror underneath already provides the sharp puddle reflections.
 ground.material.onBeforeCompile = s => { s.fragmentShader = s.fragmentShader.replace('roughnessFactor *= texelRoughness.g;', 'roughnessFactor *= max(texelRoughness.g, 0.32);'); };
-scene.add(ground);
+snowy(ground.material);
+tokyo.add(ground);
 // Hide the asphalt layer while the mirror renders, otherwise it would block the reflection
 const mirrorRender = mirror.onBeforeRender;
 mirror.onBeforeRender = function (...args) { ground.visible = false; mirrorRender.apply(this, args); ground.visible = true; };
 
 /* =====================================================================
-   RAIN (GPU-animated line streaks that wrap around the camera)
+   FUJI VILLAGE — lakeside village (Kawaguchiko vibes): terrain, lake, houses,
+   pagoda, torii in the water, pier, stone lanterns, sakura along the shore
+   ===================================================================== */
+const vColliders = [], vLights = [];
+const shoreZ = x => -6 + 5 * Math.sin(x * 0.035) + 3 * Math.sin(x * 0.09 + 1.3);
+const farZ = x => -185 + 18 * Math.sin(x * 0.021 + 0.5);
+const VB = { x0: -82, x1: 82, z0: -40, z1: 86 };
+const PIER = { x: 32, x0: 30.8, x1: 33.2, z0: -22, z1: shoreZ(32) + 2 };
+function vHeight(x, z) {
+  const land = z - shoreZ(x);
+  let h = 0.35 + 0.9 * fbm2(x * 0.025, z * 0.025) * sstep(4, 20, land)
+        + sstep(62, 135, z) * (z - 62) * 0.42 * (0.7 + 0.6 * fbm2(x * 0.02 + 3, z * 0.02));
+  h = -3 + (h + 3) * sstep(-7, 2.5, land);                                               // shelving down into the lake
+  h = Math.max(h, -3 + sstep(-12, 28, farZ(x) - z) * (18 + 30 * fbm2(x * 0.012 + 7, z * 0.012)));   // far shore hills
+  h = Math.max(h, -3 + sstep(92, 185, Math.abs(x)) * (30 + 28 * fbm2(x * 0.015, z * 0.015 + 4)));    // side hills
+  return h;
+}
+const onPier = (x, z) => x > PIER.x0 && x < PIER.x1 && z > PIER.z0 && z < PIER.z1;
+const vGround = (x, z) => onPier(x, z) ? Math.max(0.62, vHeight(x, z)) : vHeight(x, z);
+const vWalkable = (x, z) => onPier(x, z) || (vHeight(x, z) > 0.22 && z - shoreZ(x) > 0.6);
+
+// paths: along the shore, a lane up the middle, a west lane, a spur to the pier
+const SHORE_PATH = 7.5;
+function pathDist(x, z) {
+  let d = Math.abs(x) < 86 ? Math.abs(z - (shoreZ(x) + SHORE_PATH)) : 99;
+  const zs = shoreZ(x) + SHORE_PATH;
+  if (z > zs && z < 90) d = Math.min(d, Math.abs(x), Math.abs(x + 44));
+  if (z < zs && z > PIER.z1 - 3) d = Math.min(d, Math.abs(x - PIER.x));
+  return d;
+}
+
+// ---- terrain (denser grid in the village, coarse on the far hills) ----
+const axis = (a, b, segs) => { const out = []; for (const [s0, s1, st] of segs) for (let v = s0; v < s1 - 1e-6; v += st) out.push(v); out.push(b); return out; };
+const TX = axis(-240, 240, [[-240, -100, 6], [-100, 100, LOW ? 2 : 1.5], [100, 240, 6]]);
+const TZ = axis(-300, 150, [[-300, -40, 6], [-40, 100, LOW ? 2 : 1.5], [100, 150, 4]]);
+const terrainGeo = (() => {
+  const pos = [], idx = [], NX = TX.length;
+  for (const z of TZ) for (const x of TX) pos.push(x, vHeight(x, z), z);
+  for (let j = 0; j < TZ.length - 1; j++) for (let i = 0; i < NX - 1; i++) {
+    const a = j * NX + i, b = a + 1, c = a + NX, d = c + 1;
+    idx.push(a, c, b, b, c, d);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(pos.length), 3));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+})();
+const terrain = new THREE.Mesh(terrainGeo, toon({ vertexColors: true, color: 0xc4c4c4 }));
+terrain.receiveShadow = true; village.add(terrain);
+
+// per-vertex paint: grass / sand / dirt path / forested hills — repainted when the season changes
+const TERRAIN_PAL = {
+  spring: { grass: ['#7aa84e', '#a3c263'], forest: ['#5f9a4a', '#e8a8c2'], forestMix: 0.25 },
+  rainy:  { grass: ['#3f7a36', '#5b9143'], forest: ['#2f6e38', '#4a8c42'], forestMix: 0.5 },
+  autumn: { grass: ['#a08c48', '#b8a45c'], forest: ['#c2462a', '#e3962f'], forestMix: 0.55 },
+  winter: { grass: ['#8f9878', '#aaa98e'], forest: ['#5e6258', '#7d7c74'], forestMix: 0.5 },
+};
+function paintTerrain(season) {
+  const P = TERRAIN_PAL[season], g1 = hex(P.grass[0]), g2 = hex(P.grass[1]), f1 = hex(P.forest[0]), f2 = hex(P.forest[1]);
+  const sand = hex('#d9cba0'), wetSand = hex('#8f8466'), dirt = hex('#b69a6e'), tmp = new THREE.Color();
+  const p = terrainGeo.attributes.position, c = terrainGeo.attributes.color;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), land = z - shoreZ(x);
+    const n = fbm2(x * 0.08, z * 0.08);
+    const hillK = Math.max(sstep(-10, 10, -120 - z + 0 * x), sstep(95, 120, Math.abs(x)), sstep(80, 100, z));
+    tmp.copy(g1).lerp(g2, n);
+    if (hillK > 0) { const fk = vnoise(x * 0.09, z * 0.09) > 1 - P.forestMix ? 1 : 0; tmp.lerp(new THREE.Color().copy(f1).lerp(f2, fk), hillK); }
+    if (y < 0.5 && land < 4 && hillK < 0.5) tmp.copy(y < -0.2 ? wetSand : sand);
+    const pd = pathDist(x, z);
+    if (pd < 1.6 && land > 3) tmp.lerp(dirt, sstep(1.6, 0.9, pd));
+    c.setXYZ(i, tmp.r, tmp.g, tmp.b);
+  }
+  c.needsUpdate = true;
+}
+
+// ---- lake: mirror with gentle anime wave distortion + deep-water tint ----
+const LakeShader = {
+  name: 'LakeShader',
+  uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, uTime: { value: 0 }, uDeep: { value: new THREE.Color() }, uRain: { value: 0 }, uSpark: { value: 1 } },
+  vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vW;
+    void main(){ vUv = textureMatrix*vec4(position,1.); vec4 w = modelMatrix*vec4(position,1.); vW = w.xyz; gl_Position = projectionMatrix*viewMatrix*w; }`,
+  fragmentShader: `uniform vec3 color, uDeep; uniform sampler2D tDiffuse; uniform float uTime, uRain, uSpark; varying vec4 vUv; varying vec3 vW;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+    float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+      return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
+    void main(){
+      vec2 p = vW.xz; float dist = length(vW - cameraPosition);
+      float w1 = noise(p*vec2(0.09,0.4) + vec2(uTime*0.05, uTime*0.16)) - .5;
+      float w2 = noise(p*vec2(0.35,1.3) - vec2(uTime*0.12, uTime*0.35)) - .5;
+      float k = (0.006 + uRain*0.01)*(1. - smoothstep(15., 220., dist)*0.75);
+      vec4 uv = vUv; uv.xy += vec2(w1*0.5 + w2*0.4, w1 + w2)*k*uv.w;
+      vec3 refl = texture2DProj(tDiffuse, uv).rgb*color;
+      vec3 V = normalize(cameraPosition - vW);
+      float fres = 0.35 + 0.65*pow(1. - max(V.y, 0.), 3.);
+      vec3 col = mix(uDeep, refl, fres);
+      float band = noise(p*vec2(0.04, 0.8) + vec2(0., uTime*0.25));      // painted glints (anime water lines)
+      col += uSpark*vec3(1.,.97,.9)*smoothstep(0.83, 0.86, band)*(1. - smoothstep(20., 160., dist))*0.35;
+      gl_FragColor = vec4(col, 1.);
+    }`,
+};
+const lake = new Reflector(new THREE.PlaneGeometry(560, 360), {
+  clipBias: 0.003, color: 0xc9d4de, shader: LakeShader,
+  textureWidth: innerWidth * renderer.getPixelRatio() * mirrorScale, textureHeight: innerHeight * renderer.getPixelRatio() * mirrorScale,
+});
+lake.rotation.x = -Math.PI / 2; lake.position.set(0, 0, -150);
+village.add(lake);
+
+// ---- village materials ----
+function houseWallTex(kind) {             // 256 px = 6 m, posts every 2 m; returns colour + window-glow maps
+  const S = 256, px = m => m / 6 * S, Y = m => S - px(m);
+  const col = document.createElement('canvas'), emi = document.createElement('canvas');
+  col.width = col.height = emi.width = emi.height = S;
+  const g = col.getContext('2d'), e = emi.getContext('2d');
+  const plaster = kind === 1 ? '#eadfc8' : '#f3eee3', wood = kind === 1 ? '#3d2a20' : '#5a3f2e';
+  g.fillStyle = plaster; g.fillRect(0, 0, S, S); e.fillStyle = '#000'; e.fillRect(0, 0, S, S);
+  g.fillStyle = '#8f8b84'; g.fillRect(0, Y(0.45), S, px(0.45));                           // stone base
+  g.fillStyle = '#6d4c37'; g.fillRect(0, Y(0.95), S, px(0.5));                            // board skirt
+  g.fillStyle = 'rgba(0,0,0,.2)'; for (let x = 0; x < S; x += 7) g.fillRect(x, Y(0.95), 1, px(0.5));
+  const win = (cx, y0, y1, w, lattice) => {
+    const x = cx - px(w) / 2, y = Y(y1), h = px(y1 - y0);
+    g.fillStyle = lattice ? '#e3c48c' : '#f7f1e3'; g.fillRect(x, y, px(w), h);
+    e.fillStyle = '#ffb35c'; e.fillRect(x, y, px(w), h);
+    g.fillStyle = wood; e.fillStyle = '#000';
+    if (lattice) for (let xx = x; xx < x + px(w); xx += 5) { g.fillRect(xx, y, 2.5, h); e.fillRect(xx, y, 2.5, h); }
+    else {
+      for (let xx = x; xx <= x + px(w); xx += px(w) / 4) { g.fillRect(xx - 1, y, 2, h); e.fillRect(xx - 1, y, 2, h); }
+      for (let yy = y; yy <= y + h; yy += h / 5) { g.fillRect(x, yy - 1, px(w), 2); e.fillRect(x, yy - 1, px(w), 2); }
+    }
+    g.strokeStyle = wood; g.lineWidth = 3; g.strokeRect(x, y, px(w), h);
+  };
+  for (let b = 0; b < 3; b++) {
+    const cx = px(b * 2 + 1);
+    win(cx, 1.0, 2.3, 1.3, kind === 1);
+    win(cx, 3.3, 4.4, 1.0, false);
+  }
+  g.fillStyle = wood;
+  for (let b = 0; b <= 3; b++) g.fillRect(px(b * 2) - 3, 0, 6, S);
+  g.fillRect(0, Y(2.62), S, px(0.22)); g.fillRect(0, Y(4.78), S, px(0.2));
+  const map = new THREE.CanvasTexture(col), emissiveMap = new THREE.CanvasTexture(emi);
+  for (const t of [map, emissiveMap]) { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = MAX_ANISO; }
+  return toon({ map, emissiveMap, emissive: 0xffffff, emissiveIntensity: 0 });
+}
+const wallMats = [houseWallTex(0), houseWallTex(1)];
+const tileMat = toon({ map: canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = '#4b566a'; g.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 16) { g.fillStyle = '#5f6c82'; g.fillRect(x + 2, 0, 8, h); g.fillStyle = '#39404f'; g.fillRect(x + 12, 0, 2, h); }
+  g.fillStyle = 'rgba(0,0,0,.25)'; for (let y = 0; y < h; y += 21) g.fillRect(0, y, w, 2);
+}, { repeat: true }) });
+const thatchMat = toon({ map: canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = '#8c6c42'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 900; i++) { g.fillStyle = pick(['#a3824f', '#6f5332', '#b39461', '#7b5e3a']); g.fillRect(rand() * w, rand() * h, 1.2, rr(6, 18)); }
+  g.fillStyle = 'rgba(0,0,0,.18)'; for (let y = 0; y < h; y += 32) g.fillRect(0, y, w, 3);
+}, { repeat: true }) });
+const plasterMat = toon({ color: 0xf1ebdf });
+const ridgeMat = toon({ color: 0x2f3542 });
+const woodMat = toon({ color: 0x6b4a34 });
+const darkWoodMat = toon({ color: 0x33241b });
+const stoneMat = toon({ color: 0x9a968d });
+const redMat = toon({ color: 0xd23a2a });
+const blackMat = toon({ color: 0x1c1c22 });
+const bronzeMat = toon({ color: 0xb08a3e });
+const norenMat = toon({ side: THREE.DoubleSide, map: canvasTex(128, 64, (g, w, h) => {
+  g.fillStyle = '#23336b'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#0d1430'; for (let x = w / 3; x < w; x += w / 3) g.fillRect(x - 1, 14, 2, h);
+  g.strokeStyle = '#f4f1ea'; g.lineWidth = 4; g.beginPath(); g.arc(w / 2, 26, 11, 0, 7); g.stroke();
+}) });
+const glowStone = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+const glowRed = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+
+const VG = { walls: [[], []], gable: [], tile: [], thatch: [], ridge: [], wood: [], darkWood: [], stone: [], noren: [], red: [], black: [], bronze: [], chochin: [], toro: [], farPine: [] };
+
+function gableGeo(d, r, x, y) {    // triangle wall under the roof at local x
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([x, y, -d / 2, x, y, d / 2, x, y + r, 0], 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
+  g.computeVertexNormals(); return g;
+}
+function roofSlabs(list, w, d, r, o, thick, yb, uvScale = 1.6) {
+  const a = Math.atan2(r, d / 2), L = (d / 2) / Math.cos(a) + o;
+  const out = [];
+  for (const s of [1, -1]) {
+    const slab = scaleUV(new THREE.BoxGeometry(w + 2 * o, thick, L), (w + 2 * o) / uvScale, L / uvScale);
+    slab.rotateX(s * a);
+    slab.translate(0, yb + r - Math.sin(a) * L / 2 + Math.cos(a) * thick / 2, s * (Math.cos(a) * L / 2 + Math.sin(a) * thick / 2));
+    out.push(slab);
+  }
+  return out;
+}
+function houseAt(x, z, rotY, type) {
+  const y0 = vHeight(x, z) - 0.1;
+  const two = type === 'machiya', gassho = type === 'gassho';
+  const w = gassho ? 12 : two ? 8 : pick([8, 10]), d = gassho ? 8 : pick([6, 8]), h = gassho ? 2.8 : two ? 5.2 : 3.0;
+  const M = new THREE.Matrix4().compose(new V3(x, y0, z), new THREE.Quaternion().setFromAxisAngle(UP, rotY), new V3(1, 1, 1));
+  const P = g => g.applyMatrix4(M), W = (lx, ly, lz) => new V3(lx, ly, lz).applyMatrix4(M);
+  VG.stone.push(P(new THREE.BoxGeometry(w + 0.8, 0.9, d + 0.8).translate(0, -0.2, 0)));
+  VG.walls[two ? 1 : pick([0, 0, 1])].push(P(buildingBox(w, h, d, w / 2, 6, d / 2).translate(0, h / 2 + 0.25, 0)));
+  const yb = h + 0.25, r = gassho ? d * 0.95 : d * 0.3, o = gassho ? 0.9 : 0.75, thick = gassho ? 0.6 : 0.22;
+  for (const s of roofSlabs(null, w, d, r, o, thick, yb)) (gassho ? VG.thatch : VG.tile).push(P(s));
+  VG.gable.push(P(gableGeo(d, r, w / 2, yb)), P(gableGeo(d, r, -w / 2, yb)));
+  VG.ridge.push(P(new THREE.BoxGeometry(w + 2 * o + 0.2, gassho ? 0.5 : 0.32, gassho ? 0.9 : 0.5).translate(0, yb + r + thick * 0.9, 0)));
+  if (two) { const [s] = roofSlabs(null, w, 2.4, 0.42, 0.2, 0.14, 2.7); VG.tile.push(P(s.translate(0, 0, d / 2))); }  // hisashi over the ground floor
+  // door, noren curtain, red chochin lantern
+  VG.darkWood.push(P(new THREE.PlaneGeometry(1.8, 2.1).translate(0, 1.3, d / 2 + 0.02)));
+  VG.noren.push(P(new THREE.PlaneGeometry(1.9, 0.8).translate(0, 2.0, d / 2 + 0.08)));
+  const lx = w / 2 - 1.2;
+  VG.chochin.push(P(new THREE.SphereGeometry(0.22, 12, 8).scale(1, 1.35, 1).translate(lx, 2.35, d / 2 + 0.35)));
+  VG.black.push(P(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 10).translate(lx, 2.66, d / 2 + 0.35)), P(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 10).translate(lx, 2.04, d / 2 + 0.35)));
+  vLights.push({ p: W(lx, 2.3, d / 2 + 1.2), c: new THREE.Color(0xff8a4a), i: 14 });
+  vLights.push({ p: W(0, 1.8, d / 2 + 2.2), c: new THREE.Color(0xffc27a), i: 10 });
+  const rot90 = Math.abs(Math.sin(rotY)) > 0.5, hx = (rot90 ? d : w) / 2 + 0.5, hz = (rot90 ? w : d) / 2 + 0.5;
+  vColliders.push({ x0: x - hx, x1: x + hx, z0: z - hz, z1: z + hz });
+}
+function toroAt(x, z) {    // stone lantern
+  const y = vHeight(x, z);
+  VG.stone.push(new THREE.CylinderGeometry(0.34, 0.42, 0.25, 6).translate(x, y + 0.12, z),
+    new THREE.CylinderGeometry(0.11, 0.14, 0.75, 6).translate(x, y + 0.62, z),
+    new THREE.CylinderGeometry(0.36, 0.3, 0.16, 6).translate(x, y + 1.06, z),
+    new THREE.ConeGeometry(0.55, 0.38, 6).translate(x, y + 1.66, z),
+    new THREE.SphereGeometry(0.09, 8, 6).translate(x, y + 1.9, z));
+  for (const [ox, oz] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]]) VG.stone.push(new THREE.BoxGeometry(0.07, 0.34, 0.07).translate(x + ox, y + 1.31, z + oz));
+  VG.toro.push(new THREE.BoxGeometry(0.28, 0.28, 0.28).translate(x, y + 1.31, z));
+  vLights.push({ p: new V3(x, y + 1.6, z), c: new THREE.Color(0xffc070), i: 9 });
+  vColliders.push({ x0: x - 0.45, x1: x + 0.45, z0: z - 0.45, z1: z + 0.45 });
+}
+function pagodaAt(x, z) {  // five-storey pagoda on a stone platform
+  const y0 = vHeight(x, z);
+  VG.stone.push(new THREE.BoxGeometry(7.5, 1.4, 7.5).translate(x, y0 + 0.2, z));
+  let y = y0 + 0.9;
+  for (let i = 0; i < 5; i++) {
+    const s = 4.6 - i * 0.5, bh = i === 0 ? 2.1 : 1.45;
+    VG.red.push(new THREE.BoxGeometry(s * 0.7, bh, s * 0.7).translate(x, y + bh / 2, z));
+    VG.wood.push(new THREE.BoxGeometry(s * 0.82, 0.2, s * 0.82).translate(x, y + bh - 0.05, z));
+    y += bh;
+    const roof = scaleUV(new THREE.CylinderGeometry(s * 0.42, s * 0.95, 0.55, 4, 1), 4, 0.6); roof.rotateY(Math.PI / 4); roof.translate(x, y + 0.27, z);
+    VG.tile.push(roof); y += 0.55;
+  }
+  VG.bronze.push(new THREE.CylinderGeometry(0.07, 0.12, 4.4, 8).translate(x, y + 2.2, z));
+  for (let k = 0; k < 9; k++) VG.bronze.push(new THREE.CylinderGeometry(0.28, 0.28, 0.07, 10).translate(x, y + 0.6 + k * 0.33, z));
+  VG.bronze.push(new THREE.SphereGeometry(0.16, 10, 8).translate(x, y + 4.45, z));
+  vColliders.push({ x0: x - 3.9, x1: x + 3.9, z0: z - 3.9, z1: z + 3.9 });
+  vLights.push({ p: new V3(x, y0 + 3, z + 5), c: new THREE.Color(0xffb070), i: 16 });
+}
+function toriiAt(x, z) {   // standing in the lake
+  const yb = -3.2;
+  for (const s of [-1, 1]) {
+    VG.red.push(new THREE.CylinderGeometry(0.3, 0.36, 10.6, 14).translate(x + s * 2.8, yb + 5.3, z));
+    VG.black.push(new THREE.CylinderGeometry(0.4, 0.4, 0.5, 14).translate(x + s * 2.8, 0.1, z));
+  }
+  const kasagi = new THREE.BoxGeometry(8.8, 0.45, 0.75); { const p = kasagi.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) + Math.pow(p.getX(i) / 4.4, 4) * 0.35); kasagi.computeVertexNormals(); }
+  VG.black.push(kasagi.translate(x, yb + 10.75, z));
+  VG.red.push(new THREE.BoxGeometry(8.2, 0.4, 0.6).translate(x, yb + 10.3, z));
+  VG.red.push(new THREE.BoxGeometry(7.2, 0.36, 0.36).translate(x, yb + 8.8, z));
+  VG.red.push(new THREE.BoxGeometry(0.34, 1.1, 0.3).translate(x, yb + 9.55, z));
+}
+function pierAt() {
+  const len = PIER.z1 - PIER.z0 + 1;
+  VG.wood.push(scaleUV(new THREE.BoxGeometry(2.6, 0.18, len), 1, len).translate(PIER.x, 0.52, (PIER.z0 + PIER.z1) / 2 - 0.5));
+  for (let z = PIER.z0; z < PIER.z1; z += 3) for (const s of [-1, 1]) VG.darkWood.push(new THREE.CylinderGeometry(0.12, 0.12, 4.2, 6).translate(PIER.x + s * 1.2, -1.4, z));
+  for (let z = PIER.z0; z < PIER.z1; z += 1.2) VG.darkWood.push(new THREE.BoxGeometry(2.62, 0.02, 0.05).translate(PIER.x, 0.62, z));
+}
+function polesAlong(x, z0, z1, step) {     // countryside utility poles + sagging wires
+  const tops = [];
+  for (let z = z0; z <= z1; z += step) {
+    const y = vHeight(x, z);
+    VG.darkWood.push(new THREE.CylinderGeometry(0.1, 0.14, 8, 6).translate(x, y + 4, z), new THREE.BoxGeometry(1.6, 0.1, 0.1).translate(x, y + 7.5, z));
+    vColliders.push({ x0: x - 0.2, x1: x + 0.2, z0: z - 0.2, z1: z + 0.2 });
+    tops.push(new V3(x, y + 7.5, z));
+  }
+  for (let i = 0; i < tops.length - 1; i++) for (const dx of [-0.7, 0.7]) {
+    const A = tops[i].clone().add(new V3(dx, 0.05, 0)), B = tops[i + 1].clone().add(new V3(dx, 0.05, 0));
+    for (let k = 0; k < 10; k++) { const s = t => -Math.sin(t * Math.PI) * 0.9; vWire.push(A.clone().lerp(B, k / 10).add(new V3(0, s(k / 10), 0)), A.clone().lerp(B, (k + 1) / 10).add(new V3(0, s((k + 1) / 10), 0))); }
+  }
+}
+const vWire = [];
+
+// ---- lay out the village ----
+const HOUSES = [];
+for (const [i, z] of [22, 38, 54, 70].entries()) {
+  HOUSES.push([-9.5, z, Math.PI / 2, i % 2 ? 'machiya' : 'minka'], [9.5, z + 5, -Math.PI / 2, i % 2 ? 'minka' : 'machiya']);
+}
+for (const x of [48, 62, 76]) HOUSES.push([x, shoreZ(x) + 20, Math.PI, pick(['minka', 'machiya'])]);
+for (const x of [-64, -77]) HOUSES.push([x, shoreZ(x) + 20, Math.PI, 'minka']);
+for (const z of [30, 50, 70]) HOUSES.push([-54, z, Math.PI / 2, 'gassho']);
+HOUSES.push([-31, 62, -Math.PI / 2, 'gassho']);
+for (const [x, z, r, t] of HOUSES) houseAt(x, z, r, t);
+const PAGODA = { x: -26, z: shoreZ(-26) + 14 };
+pagodaAt(PAGODA.x, PAGODA.z);
+toriiAt(12, shoreZ(12) - 13);
+pierAt();
+for (let x = -78; x <= 78; x += 13) if (Math.abs(x - PIER.x) > 4 && Math.abs(x) > 2) toroAt(x, shoreZ(x) + SHORE_PATH - 2.6);
+polesAlong(3.4, 12, 84, 14);
+village.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(vWire), new THREE.LineBasicMaterial({ color: 0x1b1d24 })));
+
+// trees: sakura along the shore, maples between houses, pines on the hills, forest on far shores
+const nearBuilding = (x, z, m) => vColliders.some(b => x > b.x0 - m && x < b.x1 + m && z > b.z0 - m && z < b.z1 + m);
+for (let x = -80; x <= 80; x += 8.5) {
+  const tx = x + rr(-1.5, 1.5), tz = shoreZ(tx) + SHORE_PATH + rr(3.2, 5);
+  if (Math.abs(tx) < 3.5 || Math.abs(tx - PIER.x) < 3 || Math.abs(tx + 44) < 3 || nearBuilding(tx, tz, 1.5)) continue;
+  addTree('village', 'sakura', tx, vHeight(tx, tz), tz, rr(1, 1.25));
+  vColliders.push({ x0: tx - 0.3, x1: tx + 0.3, z0: tz - 0.3, z1: tz + 0.3 });
+}
+for (const [ox, oz] of [[-6, 3], [6, 4], [-4, -4.5], [5, -4]]) {   // sakura grove around the pagoda
+  const tx = PAGODA.x + ox, tz = PAGODA.z + oz + (oz < 0 ? 0 : 1);
+  if (vWalkable(tx, tz)) { addTree('village', 'sakura', tx, vHeight(tx, tz), tz, 1.15); vColliders.push({ x0: tx - 0.3, x1: tx + 0.3, z0: tz - 0.3, z1: tz + 0.3 }); }
+}
+for (let i = 0, n = 0; i < 400 && n < 34; i++) {
+  const tx = rr(-80, 80), tz = rr(8, 84);
+  if (tz - shoreZ(tx) < SHORE_PATH + 7 || pathDist(tx, tz) < 3 || nearBuilding(tx, tz, 2.5) || Math.hypot(tx - PAGODA.x, tz - PAGODA.z) < 8) continue;
+  addTree('village', rand() < 0.7 ? 'maple' : 'sakura', tx, vHeight(tx, tz), tz, rr(0.9, 1.3)); n++;
+  vColliders.push({ x0: tx - 0.3, x1: tx + 0.3, z0: tz - 0.3, z1: tz + 0.3 });
+}
+for (let i = 0; i < 90; i++) {       // pines on the hills behind the village
+  const tx = rr(-130, 130), tz = rr(88, 140);
+  addTree('village', 'pine', tx, vHeight(tx, tz) - 0.3, tz, rr(1.2, 2));
+}
+for (let i = 0; i < (LOW ? 350 : 700); i++) {    // low-poly forest on the far shore and side hills
+  const far = rand() < 0.6, tx = far ? rr(-240, 240) : (rand() < 0.5 ? -1 : 1) * rr(96, 240), tz = far ? rr(-300, -165) : rr(-170, 140);
+  const y = vHeight(tx, tz); if (y < 2.5) continue;
+  const s = rr(3, 6.5), c = new THREE.ConeGeometry(s * 0.45, s * 1.6, 6); c.translate(tx, y + s * 0.7, tz); VG.farPine.push(c);
+}
+
+const village_ = village;
+VG.walls.forEach((l, i) => addMerged(l, wallMats[i], true, village_));
+addMerged(VG.gable, snowy(new THREE.MeshToonMaterial({ gradientMap: toonRamp, color: 0xf1ebdf, side: THREE.DoubleSide }), 0), true, village_);
+addMerged(VG.tile, tileMat, true, village_);
+addMerged(VG.thatch, thatchMat, true, village_);
+addMerged(VG.ridge, ridgeMat, true, village_);
+addMerged(VG.wood, woodMat, true, village_);
+addMerged(VG.darkWood, darkWoodMat, true, village_);
+addMerged(VG.stone, stoneMat, true, village_);
+addMerged(VG.noren, norenMat, false, village_);
+addMerged(VG.red, redMat, true, village_);
+addMerged(VG.black, blackMat, true, village_);
+addMerged(VG.bronze, bronzeMat, true, village_);
+addMerged(VG.chochin, glowRed, false, village_);
+addMerged(VG.toro, glowStone, false, village_);
+const farPineMesh = addMerged(VG.farPine, toon({ color: 0x2c5a3a }), false, village_);
+mergeTrees('village', village_);
+
+// rowing boat tied at the pier
+const boat = (() => {
+  const g = new THREE.BoxGeometry(1.3, 0.5, 3.6, 2, 1, 8), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) { const z = p.getZ(i), y = p.getY(i); p.setX(i, p.getX(i) * (1 - 0.75 * Math.pow(Math.abs(z) / 1.8, 2.5)) * (y < 0 ? 0.7 : 1)); p.setY(i, y + Math.pow(Math.abs(z) / 1.8, 3) * 0.25); }
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, toon({ color: 0x7a5238 })); m.castShadow = true;
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.06, 0.35), woodMat); seat.position.y = 0.12; m.add(seat);
+  m.position.set(PIER.x + 2.4, 0.1, PIER.z0 + 4); village.add(m); return m;
+})();
+
+/* =====================================================================
+   WEATHER: rain streaks + falling petals / maple leaves / snow
    ===================================================================== */
 const RAIN = LOW ? 7000 : 15000;
 const rainGeo = new THREE.BufferGeometry();
@@ -636,7 +1175,7 @@ const rainMat = new THREE.ShaderMaterial({
 });
 const rain = new THREE.LineSegments(rainGeo, rainMat); rain.frustumCulled = false; scene.add(rain);
 
-// Ripples on puddles
+// Ripples on puddles / the lake surface
 const RIP = LOW ? 250 : 550;
 const ripGeo = new THREE.InstancedBufferGeometry().copy(new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2));
 { const s = new Float32Array(RIP * 2); for (let i = 0; i < s.length; i++) s[i] = Math.random() * 10; ripGeo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(s, 2)); }
@@ -657,13 +1196,65 @@ const ripMat = new THREE.ShaderMaterial({
 });
 const ripples = new THREE.Mesh(ripGeo, ripMat); ripples.frustumCulled = false; scene.add(ripples);
 
+// Falling petals / leaves / snow: instanced quads tumbling in a box that wraps around the camera
+const FLURRY = LOW ? 1600 : 3200;
+const flGeo = new THREE.InstancedBufferGeometry().copy(new THREE.PlaneGeometry(1, 1));
+{ const s = new Float32Array(FLURRY * 4); for (let i = 0; i < s.length; i++) s[i] = Math.random(); flGeo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(s, 4)); }
+const flMat = new THREE.ShaderMaterial({
+  uniforms: { uTime: { value: 0 }, uCenter: { value: new V3() }, uBox: { value: new V3(36, 22, 36) }, uFall: { value: 1 }, uSway: { value: 1 }, uSize: { value: 0.1 },
+    uShape: { value: 0 }, uLight: { value: 1 }, uWind: { value: new THREE.Vector2() }, uC1: { value: new THREE.Color() }, uC2: { value: new THREE.Color() }, uC3: { value: new THREE.Color() } },
+  vertexShader: `attribute vec4 aSeed; uniform float uTime, uFall, uSway, uSize, uShape; uniform vec3 uCenter, uBox; uniform vec2 uWind;
+    varying vec2 vUv; varying float vA, vS, vShade;
+    mat3 rot(vec3 a, float t){ a = normalize(a); float s = sin(t), c = cos(t), o = 1. - c;
+      return mat3(o*a.x*a.x+c, o*a.x*a.y+a.z*s, o*a.z*a.x-a.y*s,  o*a.x*a.y-a.z*s, o*a.y*a.y+c, o*a.y*a.z+a.x*s,  o*a.z*a.x+a.y*s, o*a.y*a.z-a.x*s, o*a.z*a.z+c); }
+    void main(){
+      float sp = 0.7 + 0.6*aSeed.w;
+      vec3 p = aSeed.xyz*uBox + vec3(uWind.x, -uFall*sp, uWind.y)*uTime;
+      p.x += sin(uTime*(0.9+aSeed.w) + aSeed.w*40.)*uSway;
+      p.z += cos(uTime*(0.7+aSeed.w*0.8) + aSeed.w*25.)*uSway;
+      p = mod(p - uCenter + uBox*0.5, uBox) + uCenter - uBox*0.5;
+      vec3 local = position*uSize*(0.7 + 0.6*fract(aSeed.w*7.13));
+      vec4 mv;
+      if (uShape > 1.5) { mv = viewMatrix*vec4(p, 1.); mv.xy += local.xy; vShade = 1.; }
+      else {
+        mat3 R = rot(vec3(sin(aSeed.w*12.), 0.6, cos(aSeed.w*9.)), uTime*(1.2 + aSeed.w*2.5) + aSeed.w*20.);
+        vShade = 0.7 + 0.3*abs((R*vec3(0.,0.,1.)).y);
+        mv = viewMatrix*vec4(p + R*local, 1.);
+      }
+      float d = -mv.z; vA = smoothstep(0.3, 1.2, d)*(1. - smoothstep(uBox.x*0.3, uBox.x*0.5, d));
+      vUv = uv*2. - 1.; vS = aSeed.w; gl_Position = projectionMatrix*mv;
+    }`,
+  fragmentShader: `uniform float uShape, uLight; uniform vec3 uC1, uC2, uC3; varying vec2 vUv; varying float vA, vS, vShade;
+    void main(){
+      vec2 p = vUv; float m; vec3 col;
+      if (uShape < 0.5) {                     // sakura petal with the notched tip
+        vec2 q = p + vec2(0., 0.15);
+        m = 1. - smoothstep(0.82, 1.0, length(vec2(q.x*1.75, q.y*1.05)));
+        m *= smoothstep(0.16, 0.26, length(p - vec2(0., 0.95)));
+        col = mix(uC2, uC1, smoothstep(-0.8, 0.8, q.y)); col = mix(col, uC3, vS*0.35);
+      } else if (uShape < 1.5) {              // maple leaf
+        float a = atan(p.x, p.y), r = length(p);
+        float lobes = 0.5 + 0.42*pow(abs(cos(a*2.5)), 0.7);
+        m = 1. - smoothstep(lobes - 0.07, lobes, r);
+        m = max(m, step(abs(p.x), 0.05)*step(p.y, -0.3)*step(-1., p.y));   // stem
+        col = mix(uC1, uC2, fract(vS*3.7)); col = mix(col, uC3, step(0.78, fract(vS*5.3)));
+      } else {                                // snowflake
+        m = smoothstep(1., 0.15, length(p)); col = uC1;
+      }
+      float al = m*vA; if (al < 0.03) discard;
+      gl_FragColor = vec4(col*uLight*vShade, al);
+    }`,
+  transparent: true, depthWrite: false, side: THREE.DoubleSide,
+});
+const flurry = new THREE.Mesh(flGeo, flMat); flurry.frustumCulled = false; scene.add(flurry);
+
 /* =====================================================================
-   POOLED NEON LIGHTS (night): a few real point lights hop to the nearest signs
+   POOLED LIGHTS (night): a few real point lights hop to the nearest signs / lanterns
    ===================================================================== */
 const POOL = LOW ? 5 : 9;
 const pool = Array.from({ length: POOL }, () => { const l = new THREE.PointLight(0xffffff, 0, 22, 2); l.userData.src = null; scene.add(l); return l; });
-function updatePool(p) {
-  const near = lightSources.map(s => [s, s.p.distanceToSquared(p)]).filter(e => e[1] < 3600).sort((a, b) => a[1] - b[1]).slice(0, POOL).map(e => e[0]);
+function updatePool(p, sources) {
+  const near = sources.map(s => [s, s.p.distanceToSquared(p)]).filter(e => e[1] < 3600).sort((a, b) => a[1] - b[1]).slice(0, POOL).map(e => e[0]);
   const want = new Set(near);
   for (const l of pool) if (l.userData.src && !want.has(l.userData.src)) l.userData.src = null;
   for (const s of near) {
@@ -672,16 +1263,29 @@ function updatePool(p) {
     l.userData.src = s; l.position.copy(s.p); l.intensity = 0;
   }
 }
+const resetPool = () => { for (const l of pool) { l.userData.src = null; l.intensity = 0; } };
 
 /* =====================================================================
-   CHARACTER
+   LOCATIONS
+   ===================================================================== */
+const LOCS = {
+  tokyo: { group: tokyo, colliders, lights: lightSources, bounds: { x0: W_MIN, x1: W_MAX, z0: Z_MIN, z1: Z_MAX }, sun: SUN_TOKYO,
+    spawn: new V3(3, 0, 122), heading: Math.PI, groundY: () => 0, walkable: null, kanji: '東京', name: 'TOKYO' },
+  village: { group: village, colliders: vColliders, lights: vLights, bounds: VB, sun: SUN_VILLAGE,
+    spawn: new V3(0, 0, 42), heading: Math.PI, groundY: vGround, walkable: vWalkable, kanji: '富士の里', name: 'FUJI VILLAGE' },
+};
+let loc = 'tokyo';
+const L = () => LOCS[loc];
+
+/* =====================================================================
+   CHARACTER — VRM anime model with procedural walk / run / idle + clear umbrella
    ===================================================================== */
 const player = { pos: new V3(3, 0, 122), heading: Math.PI, speed: 0 };
 const charRoot = new THREE.Group(); scene.add(charRoot);
 const keyLight = new THREE.PointLight(0xffd2a8, 5, 7, 2); scene.add(keyLight);
-let mixer = null; const actions = {}; const weights = { idle: 1, walk: 0, run: 0 };
-let fallback = null;
-const charMeshes = [];   // { mesh, night, day } for material swapping
+let vrm = null, fallback = null, CAM_H = 1.35;
+const bones = {};
+const charMeshes = [];   // fallback only: { mesh, night, day }
 
 function makeFallbackCharacter() {
   const m = new THREE.MeshStandardMaterial({ color: 0x223044, roughness: 0.6 });
@@ -692,29 +1296,103 @@ function makeFallbackCharacter() {
   const legs = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * 0.11, 0.8, 0); const l = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.6, 4, 8), m); l.position.y = -0.38; p.add(l); g.add(p); return p; });
   const arms = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * 0.3, 1.4, 0); const l = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.5, 4, 8), m); l.position.y = -0.3; p.add(l); g.add(p); return p; });
   charRoot.add(g); fallback = { legs, arms, body, t: 0 };
-  g.traverse(o => { if (o.isMesh) { o.castShadow = true; charMeshes.push({ mesh: o, night: o.material, day: toon({ color: o.material.color }) }); } });
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; charMeshes.push({ mesh: o, night: o.material, day: toon({ color: o.material.color }, 0) }); } });
 }
 
-const charReady = new Promise(resolve => {
-  new GLTFLoader().load(CHARACTER_URL, gltf => {
-    const model = gltf.scene;
-    model.scale.setScalar(1);              // Soldier.glb is already ~1.8 m tall
-    model.rotation.y = Math.PI;            // Soldier.glb faces -Z; we want +Z to be "forward"
-    model.traverse(o => {
-      if (!o.isMesh) return;
-      o.frustumCulled = false; o.castShadow = true;
-      charMeshes.push({ mesh: o, night: o.material, day: toon({ map: o.material.map, normalMap: o.material.normalMap, color: 0xffffff }) });
-    });
-    charRoot.add(model);
-    mixer = new THREE.AnimationMixer(model);
-    for (const name of ['Idle', 'Walk', 'Run']) {
-      const clip = THREE.AnimationClip.findByName(gltf.animations, name);
-      if (clip) { const a = mixer.clipAction(clip); a.play(); a.setEffectiveWeight(name === 'Idle' ? 1 : 0); actions[name.toLowerCase()] = a; }
+// Clear vinyl umbrella — the rainy-day Tokyo classic
+const umbrella = (() => {
+  const g = new THREE.Group();
+  const R = 0.78, CY = 0.42; g.userData.rimY = CY + Math.cos(1.0) * R * 0.62;
+  const canopy = new THREE.Mesh(new THREE.SphereGeometry(R, 24, 8, 0, Math.PI * 2, 0, 1.0).scale(1, 0.62, 1),
+    new THREE.MeshStandardMaterial({ color: 0xeef6ff, transparent: true, opacity: 0.38, roughness: 0.1, side: THREE.DoubleSide, depthWrite: false }));
+  canopy.position.y = CY; g.add(canopy);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(Math.sin(1.0) * R, 0.012, 4, 32), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  rim.rotation.x = Math.PI / 2; rim.position.y = CY + Math.cos(1.0) * R * 0.62; g.add(rim);
+  const ribPts = [];
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2;
+    for (let k = 0; k < 6; k++) {
+      const t0 = k / 6, t1 = (k + 1) / 6, pt = t => { const th = t * 1.0; return new V3(Math.sin(th) * Math.cos(a) * R, CY + Math.cos(th) * R * 0.62, Math.sin(th) * Math.sin(a) * R); };
+      ribPts.push(pt(t0), pt(t1));
     }
+  }
+  g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(ribPts), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })));
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 1.4, 6), new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.6, roughness: 0.3 }));
+  shaft.position.y = CY + 0.48 - 0.7; g.add(shaft);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.016, 6, 12, Math.PI), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+  handle.position.set(0.05, CY + 0.48 - 1.4, 0); handle.rotation.z = Math.PI; g.add(handle);
+  g.visible = false; scene.add(g); return g;
+})();
+
+const charReady = new Promise(resolve => {
+  const loader = new GLTFLoader();
+  loader.register(p => new VRMLoaderPlugin(p));
+  loader.load(CHARACTER_URL, gltf => {
+    vrm = gltf.userData.vrm;
+    FLIP = vrm.meta?.metaVersion === '0';
+    VRMUtils.removeUnnecessaryVertices(gltf.scene);
+    VRMUtils.removeUnnecessaryJoints(gltf.scene);
+    VRMUtils.rotateVRM0(vrm);
+    vrm.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+    charRoot.add(vrm.scene);
+    for (const n of ['hips', 'spine', 'chest', 'upperChest', 'neck', 'head', 'leftUpperLeg', 'leftLowerLeg', 'leftFoot', 'rightUpperLeg', 'rightLowerLeg', 'rightFoot',
+      'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand', 'rightShoulder', 'rightUpperArm', 'rightLowerArm', 'rightHand'])
+      bones[n] = vrm.humanoid.getNormalizedBoneNode(n);
+    vrm.update(0); vrm.scene.updateMatrixWorld(true);
+    const hp = new V3(); vrm.humanoid.getRawBoneNode('head').getWorldPosition(hp);
+    CAM_H = clamp(hp.y - charRoot.position.y, 1.1, 1.7) * 0.93;
     resolve();
   }, xhr => { if (xhr.total) status(`Loading character… ${Math.round(xhr.loaded / xhr.total * 100)}%`); },
-  () => { makeFallbackCharacter(); resolve(); });
+  err => { console.warn('VRM failed, using fallback', err); makeFallbackCharacter(); resolve(); });
 }).then(() => applyMode());
+
+const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _e = new THREE.Euler(), AX = new V3(1, 0, 0), AZ = new V3(0, 0, 1);
+let FLIP = false;                 // VRM 0.x rigs face -Z: mirror poses authored for +Z-forward
+const flipQ = q => { if (FLIP) { q.x = -q.x; q.z = -q.z; } return q; };
+const setBone = (n, x, y, z) => { const b = bones[n]; if (b) flipQ(b.quaternion.setFromEuler(_e.set(x, y, z))); };
+function setArm(side, down, swing, elbow, twist = 0) {        // side: +1 left (+X), -1 right
+  const up = bones[side > 0 ? 'leftUpperArm' : 'rightUpperArm'], lo = bones[side > 0 ? 'leftLowerArm' : 'rightLowerArm'];
+  if (up) flipQ(up.quaternion.setFromAxisAngle(AX, swing).multiply(_q.setFromAxisAngle(AZ, -side * down)).multiply(_q2.setFromAxisAngle(AX, twist)));
+  if (lo) flipQ(lo.quaternion.setFromEuler(_e.set(0, -side * elbow, 0)));
+}
+const anim = { phase: 0, umb: 0, blink: 2.5, blinkT: 0 };
+function animateChar(dt, t, s) {
+  if (!vrm) return;
+  const a = clamp(s / WALK_SPEED, 0, 1), run = clamp((s - WALK_SPEED) / (RUN_SPEED - WALK_SPEED), 0, 1);
+  anim.phase += dt * Math.PI * 2 * (s < 0.05 ? 0 : 1.0 + 0.15 * s);
+  const ph = anim.phase, sw = Math.sin(ph), cw = Math.cos(ph);
+  const legAmp = (0.42 + 0.38 * run) * a;
+  const knee = k => a * (0.08 + (0.55 + 0.8 * run) * Math.pow(Math.max(0, k), 1.5));
+  setBone('leftUpperLeg', -sw * legAmp, 0, 0); setBone('rightUpperLeg', sw * legAmp, 0, 0);
+  setBone('leftLowerLeg', knee(cw), 0, 0); setBone('rightLowerLeg', knee(-cw), 0, 0);
+  setBone('leftFoot', -0.15 * a * Math.max(0, -sw), 0, 0); setBone('rightFoot', -0.15 * a * Math.max(0, sw), 0, 0);
+  const breathe = Math.sin(t * 1.7) * (1 - a);
+  setBone('hips', 0, -sw * 0.1 * a, Math.sin(t * 0.8) * 0.02 * (1 - a));
+  setBone('spine', 0.04 * a + 0.15 * run, sw * 0.12 * a, 0);
+  setBone('chest', breathe * 0.02, 0, 0);
+  setBone('head', -0.05 * run + Math.sin(t * 0.5) * 0.03 * (1 - a), -sw * 0.05 * a + Math.sin(t * 0.33) * 0.12 * (1 - a), 0);
+  vrm.scene.position.y = a * (0.012 + 0.03 * run) * Math.cos(2 * ph) - 0.01 * run;
+  // arms: natural swing; the right arm holds the umbrella when it is raining
+  const armAmp = (0.35 + 0.45 * run) * a, down = 1.22 - 0.12 * run, elbow = 0.2 + 0.2 * a + 1.2 * run;
+  const u = anim.umb = damp(anim.umb, season === 'rainy' ? 1 : 0, 4, dt);
+  setArm(1, down + breathe * 0.02, sw * armAmp, elbow);
+  const rs = -sw * armAmp * (1 - u) + (-0.42) * u, rd = down * (1 - u) + 1.18 * u, re = elbow * (1 - u) + 1.75 * u;
+  setArm(-1, rd, rs, re, 0.4 * u);
+  // blink
+  anim.blink -= dt;
+  if (anim.blink < 0) { anim.blinkT = 0.16; anim.blink = rr(2, 5); }
+  anim.blinkT = Math.max(0, anim.blinkT - dt);
+  vrm.expressionManager?.setValue('blink', anim.blinkT > 0 ? Math.sin((1 - anim.blinkT / 0.16) * Math.PI) : 0);
+  vrm.update(dt);
+  // umbrella follows the right hand
+  umbrella.visible = u > 0.5;
+  if (umbrella.visible) {
+    vrm.humanoid.getRawBoneNode('rightHand').getWorldPosition(umbrella.position);
+    vrm.humanoid.getRawBoneNode('head').getWorldPosition(tmp);
+    umbrella.position.y = tmp.y + 0.3 - umbrella.userData.rimY;           // rim just above the head, shaft through the hand
+    umbrella.rotation.set(-0.15, player.heading, 0.12, 'YXZ');
+  }
+}
 
 /* =====================================================================
    INPUT: keyboard · mouse drag · touch joystick + swipe look · gamepad
@@ -723,12 +1401,17 @@ const keys = {};
 addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
-  if (e.code === 'KeyN' && !e.repeat) toggleMode();
+  if (e.repeat) return;
+  if (e.code === 'KeyN') toggleMode();
+  if (e.code === 'KeyV') switchLocation();
+  if (e.code === 'KeyC') document.body.classList.toggle('cine');
+  const si = ['Digit1', 'Digit2', 'Digit3', 'Digit4'].indexOf(e.code);
+  if (si >= 0) setSeason(SEASON_ORDER[si]);
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
-const cam = { yaw: 0, pitch: 0.2, dist: 5.2, lastLook: -10 };
+const cam = { yaw: 0, pitch: 0.14, dist: 5.2, lastLook: -10 };
 const joy = { id: null, sx: 0, sy: 0, x: 0, y: 0 };
 const look = { id: null, px: 0, py: 0 };
 const joyEl = document.getElementById('joy'), knobEl = document.getElementById('knob');
@@ -779,7 +1462,8 @@ canvas.addEventListener('wheel', e => { cam.dist = clamp(cam.dist + e.deltaY * 0
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 const dz = v => Math.abs(v) < 0.15 ? 0 : v;
-let gpModePrev = false;
+const gpPrev = {};
+const gpEdge = (gp, i) => { const p = !!gp.buttons[i]?.pressed, e = p && !gpPrev[i]; gpPrev[i] = p; return e; };
 function readInput(dt) {
   let x = 0, y = 0, run = false, analog = false;
   if (keys.KeyW || keys.ArrowUp) y += 1;
@@ -798,7 +1482,10 @@ function readInput(dt) {
     if (lx || ly) { x += lx; y -= ly; analog = true; }
     if (rx || ry) { cam.yaw -= rx * 2.4 * dt; cam.pitch = clamp(cam.pitch + ry * 1.6 * dt, -0.12, 1.1); cam.lastLook = now; }
     if ((gp.buttons[7] && gp.buttons[7].value > 0.3) || gp.buttons[10]?.pressed || gp.buttons[0]?.pressed) run = true;
-    const yBtn = !!gp.buttons[3]?.pressed; if (yBtn && !gpModePrev) toggleMode(); gpModePrev = yBtn;   // Y / Triangle = day/night
+    if (gpEdge(gp, 3)) toggleMode();                                              // Y / Triangle = day / night
+    if (gpEdge(gp, 2) || gpEdge(gp, 5)) setSeason(SEASON_ORDER[(SEASON_ORDER.indexOf(season) + 1) % 4]);   // X / RB = next season
+    if (gpEdge(gp, 4)) setSeason(SEASON_ORDER[(SEASON_ORDER.indexOf(season) + 3) % 4]);                   // LB = previous season
+    if (gpEdge(gp, 1)) switchLocation();                                          // B / Circle = Tokyo ⇄ village
     break;
   }
   return { x, y, run, analog };
@@ -808,7 +1495,8 @@ function readInput(dt) {
    COLLISION (circle vs boxes)
    ===================================================================== */
 function collide(p, r) {
-  for (const b of colliders) {
+  const { colliders: list, bounds: B } = L();
+  for (const b of list) {
     const cx = clamp(p.x, b.x0, b.x1), cz = clamp(p.z, b.z0, b.z1);
     const dx = p.x - cx, dzv = p.z - cz, d2 = dx * dx + dzv * dzv;
     if (d2 >= r * r) continue;
@@ -818,13 +1506,14 @@ function collide(p, r) {
       if (m === pen[0]) p.x = b.x0 - r; else if (m === pen[1]) p.x = b.x1 + r; else if (m === pen[2]) p.z = b.z0 - r; else p.z = b.z1 + r;
     }
   }
-  p.x = clamp(p.x, W_MIN + r, W_MAX - r); p.z = clamp(p.z, Z_MIN + r, Z_MAX - r);
+  p.x = clamp(p.x, B.x0 + r, B.x1 - r); p.z = clamp(p.z, B.z0 + r, B.z1 - r);
 }
 
 /* =====================================================================
-   AUDIO (procedural rain + thunder, no files)
+   AUDIO (all procedural): rain, wind, birds, crickets, thunder, soft koto melody
    ===================================================================== */
-let actx = null, master = null, soundOn = true;
+let actx = null, master = null, verb = null, soundOn = true;
+const amb = {};
 function noiseBuffer(sec, brown) {
   const b = actx.createBuffer(2, actx.sampleRate * sec, actx.sampleRate);
   for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); let last = 0; for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; if (brown) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w; } }
@@ -834,14 +1523,29 @@ function startAudio() {
   try {
     actx = new (window.AudioContext || window.webkitAudioContext)();
     master = actx.createGain(); master.gain.value = 0.9; master.connect(actx.destination);
+    verb = actx.createConvolver();                       // small generated hall reverb
+    { const len = actx.sampleRate * 2.8, b = actx.createBuffer(2, len, actx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+      verb.buffer = b; }
+    const vg = actx.createGain(); vg.gain.value = 0.5; verb.connect(vg).connect(master);
     const white = noiseBuffer(4, false);
-    const layer = (type, freq, q, gain) => {
+    const layer = (type, freq, q) => {
       const s = actx.createBufferSource(); s.buffer = white; s.loop = true;
       const f = actx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
-      const g = actx.createGain(); g.gain.value = gain; s.connect(f).connect(g).connect(master); s.start(0, Math.random() * 3);
+      const g = actx.createGain(); g.gain.value = 0; s.connect(f).connect(g).connect(master); s.start(0, Math.random() * 3);
+      return { g, f };
     };
-    layer('lowpass', 900, 0.4, 0.35); layer('bandpass', 2500, 0.6, 0.16); layer('highpass', 7000, 0.3, 0.05);
+    amb.rain = [layer('lowpass', 900, 0.4), layer('bandpass', 2500, 0.6), layer('highpass', 7000, 0.3)];
+    amb.wind = layer('lowpass', 380, 0.9);
+    const lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 0.07; lg.gain.value = 220; lfo.connect(lg).connect(amb.wind.f.frequency); lfo.start();
+    setAmbience();
   } catch (e) { actx = null; }
+}
+function setAmbience() {
+  if (!actx) return;
+  const t = actx.currentTime, wet = season === 'rainy';
+  [0.35, 0.16, 0.05].forEach((v, i) => amb.rain[i].g.gain.setTargetAtTime(wet ? v : 0, t, 0.8));
+  amb.wind.g.gain.setTargetAtTime({ spring: 0.1, rainy: 0.04, autumn: 0.16, winter: 0.28 }[season], t, 0.8);
 }
 function thunder(dist) {
   if (!actx) return;
@@ -849,6 +1553,47 @@ function thunder(dist) {
   const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(900 - dist * 250, t); f.frequency.exponentialRampToValueAtTime(120, t + 4);
   const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1.6 - dist * 0.5, t + 0.08 + dist * 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 5.5);
   s.connect(f).connect(g).connect(master); s.start(t);
+}
+function chirp() {
+  const t0 = actx.currentTime, n = 2 + Math.floor(Math.random() * 4), base = 2600 + Math.random() * 1800;
+  for (let i = 0; i < n; i++) {
+    const t = t0 + i * (0.09 + Math.random() * 0.05), o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.setValueAtTime(base, t); o.frequency.exponentialRampToValueAtTime(base * (1.3 + Math.random() * 0.4), t + 0.06);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.035, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    o.connect(g); g.connect(master); g.connect(verb); o.start(t); o.stop(t + 0.1);
+  }
+}
+function cricket() {
+  const t0 = actx.currentTime;
+  for (let i = 0; i < 3; i++) {
+    const t = t0 + i * 0.045, o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = 4400 + Math.random() * 300;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.012, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    o.connect(g).connect(master); o.start(t); o.stop(t + 0.04);
+  }
+}
+const KOTO = [293.66, 311.13, 392, 440, 466.16, 587.33, 622.25, 783.99, 880];   // in-scale (miyako-bushi) on D
+function pluck(f, t, v) {
+  const g = actx.createGain(), lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+  for (const [type, mul, amp] of [['triangle', 1, 1], ['sine', 2, 0.35]]) {
+    const o = actx.createOscillator(); o.type = type; o.frequency.value = f * mul;
+    const og = actx.createGain(); og.gain.value = amp; o.connect(og).connect(lp); o.start(t); o.stop(t + 3);
+  }
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
+  lp.connect(g); g.connect(master); g.connect(verb);
+}
+let nextPhrase = 4, nextBird = 3, nextCricket = 1;
+function audioTick(t) {
+  if (!actx || !soundOn) return;
+  if (t > nextPhrase) {            // a short koto phrase every so often
+    nextPhrase = t + rr(7, 13);
+    let i = Math.floor(rr(2, 6)), at = actx.currentTime + 0.05;
+    for (let k = 0, n = 3 + Math.floor(rand() * 4); k < n; k++) {
+      pluck(KOTO[i], at, 0.05); if (rand() < 0.2) pluck(KOTO[Math.max(0, i - 2)], at, 0.03);
+      at += rr(0.3, 0.75); i = clamp(i + pick([-2, -1, -1, 1, 1, 2]), 0, KOTO.length - 1);
+    }
+  }
+  if (isDay && (season === 'spring' || season === 'autumn') && t > nextBird) { nextBird = t + (loc === 'village' ? rr(2, 6) : rr(8, 16)); chirp(); }
+  if (!isDay && season !== 'winter' && season !== 'rainy' && loc === 'village' && t > nextCricket) { nextCricket = t + rr(0.4, 1.4); cricket(); }
 }
 document.getElementById('snd').onclick = e => {
   soundOn = !soundOn; e.target.textContent = soundOn ? 'SOUND ON' : 'SOUND OFF';
@@ -921,9 +1666,9 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uFlash: { value: 0 }, uDay: { value: 1 } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uFlash: { value: 0 }, uDay: { value: 1 }, uTint: { value: new THREE.Vector3(1, 1, 1) } },
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uFlash, uDay; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uFlash, uDay; uniform vec3 uTint; varying vec2 vUv;
     float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }
     void main(){
       vec2 d = vUv-.5; float r = dot(d,d);
@@ -935,7 +1680,7 @@ const grade = new ShaderPass({
       vec3 day = mix(vec3(l), c, 1.18);                                     // a touch more saturation
       day = mix(day, day*vec3(1.04,1.0,0.95), smoothstep(0.5,1.,l));        // warm highlights
       day = mix(day, day*vec3(0.9,0.97,1.08), 1.-smoothstep(0.,0.5,l));     // cool shadows
-      c = mix(night, day, uDay);
+      c = mix(night, day, uDay)*uTint;                                      // per-season film tint
       c += (h(vUv*1000.+fract(uTime)*100.)-.5)*mix(0.045, 0.018, uDay);
       c += uFlash*vec3(.25,.28,.35);
       gl_FragColor = vec4(c,1.);
@@ -953,37 +1698,62 @@ addEventListener('resize', () => {
 });
 
 /* =====================================================================
-   DAY ⇄ NIGHT
+   DAY ⇄ NIGHT  ×  SEASONS  ×  LOCATION
    ===================================================================== */
 const MODES = {
   day: {
     exposure: 1.0, fog: lin(0.46, 0.64, 0.86), density: 0.0075, top: lin(0.035, 0.2, 0.7),
-    cloudLit: lin(1.0, 0.98, 0.95), cloudShadow: lin(0.5, 0.58, 0.76), sun: 1, rainbow: 0.55, cover: 0.5,
+    cloudLit: lin(1.0, 0.98, 0.95), cloudShadow: lin(0.5, 0.58, 0.76), sun: 1, cover: 0.5,
     hemi: [0xbfdcff, 0x6d6457, 1.7], sunI: 3.2, moonI: 0, keyI: 0, bloom: [0.45, 0.5, 0.92], mirror: 0x8a929d, ground: 1,
     signBox: 1.0, signNeon: 1.25, shop: 1.0, screen: 1.1, lampHead: 0.9, rainCol: lin(0.8, 0.86, 0.95), rainA: 0.42, rainAdd: false,
     outline: 1, line: lin(0.03, 0.045, 0.1), wire: 0x2a3140,
   },
   night: {
     exposure: 1.15, fog: new THREE.Color(0x0a1020), density: 0.021, top: lin(0.003, 0.004, 0.012),
-    cloudLit: lin(0.035, 0.03, 0.06), cloudShadow: lin(0.008, 0.01, 0.02), sun: 0, rainbow: 0, cover: 0.45,
+    cloudLit: lin(0.035, 0.03, 0.06), cloudShadow: lin(0.008, 0.01, 0.02), sun: 0, cover: 0.45,
     hemi: [0x5266a0, 0x14141c, 1.25], sunI: 0, moonI: 0.35, keyI: 5, bloom: [0.85, 0.65, 0.8], mirror: 0x646a76, ground: 0.1,
     signBox: 1.15, signNeon: 2.4, shop: 1.15, screen: 1.6, lampHead: 3, rainCol: lin(0.55, 0.65, 0.82), rainA: 0.5, rainAdd: true,
     outline: 0.35, line: lin(0.0, 0.0, 0.0), wire: 0x06080c,
   },
 };
-let isDay = true;
+// Per-season look. Day values replace the defaults above; night values tweak the night palette.
+const SEASONS = {
+  spring: { kanji: '春', name: 'SPRING · SAKURA', screen: '春', fog: lin(0.62, 0.74, 0.92), top: lin(0.05, 0.26, 0.78), cloudLit: lin(1, 0.97, 0.97), cloudShadow: lin(0.62, 0.64, 0.82),
+    cover: 0.6, nightCover: 0.62, fogK: 0.8, sunK: 1, sunCol: 0xfff2e2, tint: [1.02, 0.99, 1.0], sakura: '#f6b3cb', maple: '#9fce5c', snowLine: 42, hazeK: 0.26,
+    fall: { shape: 0, n: 1.0, size: 0.1, speed: 0.8, sway: 0.9, wind: [0.9, 0.3], c: ['#ffe8f0', '#f38fb2', '#ffffff'] } },
+  rainy: { kanji: '梅雨', name: 'RAINY SEASON', screen: '雨', fog: MODES.day.fog, top: MODES.day.top, cloudLit: MODES.day.cloudLit, cloudShadow: MODES.day.cloudShadow,
+    cover: 0.5, nightCover: 0.45, fogK: 1, sunK: 1, sunCol: 0xfff0da, tint: [1, 1, 1], sakura: '#5f9e45', maple: '#4f9440', snowLine: 62, hazeK: 0.42, fall: null },
+  autumn: { kanji: '秋', name: 'AUTUMN · MOMIJI', screen: '秋', fog: lin(0.86, 0.7, 0.52), top: lin(0.05, 0.19, 0.6), cloudLit: lin(1, 0.9, 0.78), cloudShadow: lin(0.64, 0.5, 0.52),
+    cover: 0.58, nightCover: 0.62, fogK: 0.85, sunK: 1.05, sunCol: 0xffd6a0, tint: [1.05, 0.99, 0.92], sakura: '#eab13a', maple: '#d8412a', snowLine: 55, hazeK: 0.3,
+    fall: { shape: 1, n: 0.3, size: 0.17, speed: 1.3, sway: 1.1, wind: [1.1, 0.4], c: ['#e2421d', '#f0901c', '#f5c832'] } },
+  winter: { kanji: '冬', name: 'WINTER · YUKI', screen: '雪', fog: lin(0.74, 0.79, 0.87), top: lin(0.22, 0.36, 0.6), cloudLit: lin(0.96, 0.97, 1), cloudShadow: lin(0.6, 0.64, 0.74),
+    cover: 0.42, nightCover: 0.5, fogK: 1.25, sunK: 0.6, sunCol: 0xeef3ff, tint: [0.96, 0.99, 1.05], sakura: null, maple: null, snowLine: 14, hazeK: 0.28,
+    fall: { shape: 2, n: 1.0, size: 0.07, speed: 1.1, sway: 0.5, wind: [0.35, 0.1], c: ['#ffffff', '#ffffff', '#ffffff'] } },
+};
+const SEASON_ORDER = ['spring', 'rainy', 'autumn', 'winter'];
+let isDay = true, season = 'rainy';
+
 function applyMode() {
-  const M = isDay ? MODES.day : MODES.night;
+  const M = isDay ? MODES.day : MODES.night, S = SEASONS[season], V = loc === 'village', wet = season === 'rainy';
   renderer.toneMappingExposure = M.exposure;
-  baseFog.copy(M.fog); scene.fog.color.copy(M.fog); scene.fog.density = M.density;
+  // fog + sky
+  const fog = isDay ? S.fog : (season === 'winter' ? lin(0.02, 0.03, 0.06) : M.fog);
+  baseFog.copy(fog); scene.fog.color.copy(fog);
+  scene.fog.density = M.density * S.fogK * (V ? (isDay ? 0.42 : 0.45) : 1);
   const u = skyMat.uniforms;
-  u.uTop.value.copy(M.top); u.uHor.value.copy(M.fog); u.uCloudLit.value.copy(M.cloudLit); u.uCloudShadow.value.copy(M.cloudShadow);
-  u.uSun.value = M.sun; u.uRainbow.value = M.rainbow; u.uCover.value = M.cover;
+  u.uTop.value.copy(isDay ? S.top : M.top); u.uHor.value.copy(fog);
+  u.uCloudLit.value.copy(isDay ? S.cloudLit : M.cloudLit); u.uCloudShadow.value.copy(isDay ? S.cloudShadow : M.cloudShadow);
+  u.uSun.value = M.sun * (season === 'winter' ? 0.6 : 1); u.uRainbow.value = isDay && wet ? 0.55 : 0;
+  u.uCover.value = isDay ? S.cover : S.nightCover; u.uStars.value = !isDay && !wet ? 1 : 0;
+  // lights
   hemi.color.set(M.hemi[0]); hemi.groundColor.set(M.hemi[1]); hemi.intensity = M.hemi[2];
-  sun.intensity = M.sunI; moon.intensity = M.moonI; keyLight.intensity = M.keyI;
+  sun.intensity = M.sunI * S.sunK; sun.color.set(S.sunCol); moon.intensity = M.moonI; keyLight.intensity = M.keyI;
   [bloom.strength, bloom.radius, bloom.threshold] = M.bloom;
+  // Tokyo: wet mirror streets only while it rains
+  mirror.visible = wet;
+  ground.material.transparent = wet; ground.material.alphaMap = wet ? puddleTex : null; ground.material.needsUpdate = true;
   mirror.material.uniforms.color.value.set(M.mirror);
-  ground.material.color.setScalar(M.ground);
+  ground.material.color.setScalar(wet ? M.ground : (isDay ? 1 : 0.42));
   buildingMeshes.forEach((m, i) => { m.material = isDay ? facadeDayMats[i] : facadeNightMats[i]; });
   roofMesh.material = isDay ? roofDayMat : roofNightMat;
   vmMesh.material = isDay ? vmDayMat : vmNightMat;
@@ -994,56 +1764,127 @@ function applyMode() {
   screenMats.forEach(m => m.color.setScalar(M.screen));
   lampHeadMat.color.setRGB(M.lampHead, M.lampHead * 0.87, M.lampHead * 0.67);
   coneMesh.visible = !isDay; aviMesh.visible = !isDay; wireMat.color.set(M.wire);
+  // village: glowing windows and lanterns at night, lake tint, Fuji
+  for (const m of wallMats) m.emissiveIntensity = isDay ? 0 : 1.4;
+  glowStone.color.set(isDay ? lin(0.55, 0.53, 0.5) : lin(3.2, 2.2, 1.1));
+  glowRed.color.set(isDay ? lin(0.75, 0.12, 0.08) : lin(3.4, 0.9, 0.35));
+  lake.material.uniforms.color.value.set(isDay ? 0xc9d4de : 0x8a93a8);
+  lake.material.uniforms.uDeep.value.copy(isDay ? lin(0.03, 0.12, 0.2) : lin(0.004, 0.008, 0.02));
+  lake.material.uniforms.uRain.value = wet ? 1 : 0; lake.material.uniforms.uSpark.value = isDay ? 1 : 0.25;
+  const fu = fujiMat.uniforms;
+  fu.uSnowLine.value = S.snowLine; fu.uHaze.value.copy(fog); fu.uHazeK.value = isDay ? S.hazeK : 0.35;
+  if (isDay) {
+    fu.uSunCol.value.copy(lin(0.85, 0.8, 0.7).multiplyScalar(S.sunK)); fu.uAmb.value.copy(lin(0.45, 0.52, 0.72));
+    fu.uRock1.value.copy(lin(0.1, 0.13, 0.28)); fu.uRock2.value.copy(lin(0.16, 0.19, 0.36));
+    fu.uSnowLit.value.copy(lin(0.96, 0.97, 1.0)); fu.uSnowShade.value.copy(lin(0.46, 0.56, 0.84));
+  } else {
+    fu.uSunCol.value.copy(lin(0.05, 0.07, 0.12)); fu.uAmb.value.copy(lin(0.05, 0.06, 0.1));
+    fu.uRock1.value.copy(lin(0.02, 0.025, 0.05)); fu.uRock2.value.copy(lin(0.03, 0.035, 0.07));
+    fu.uSnowLit.value.copy(lin(0.2, 0.25, 0.4)); fu.uSnowShade.value.copy(lin(0.1, 0.13, 0.24));
+  }
+  // seasonal foliage, snow, ground colours
+  SNOW.value = season === 'winter' ? 1 : 0;
+  for (const [mat, key] of [[sakuraMat, 'sakura'], [mapleMat, 'maple']]) {
+    if (S[key]) mat.color.set(S[key]);
+    for (const l of ['tokyo', 'village']) if (foliage[l][key]) foliage[l][key].visible = !!S[key];
+  }
+  if (paintedFor !== season) { paintTerrain(season); paintedFor = season; }
+  // precipitation
+  rain.visible = wet; ripples.visible = wet;
   rainMat.uniforms.uColor.value.copy(M.rainCol); rainMat.uniforms.uAlpha.value = M.rainA;
   rainMat.blending = M.rainAdd ? THREE.AdditiveBlending : THREE.NormalBlending; rainMat.needsUpdate = true;
+  flurry.visible = !!S.fall;
+  if (S.fall) {
+    const F = S.fall, fu2 = flMat.uniforms;
+    flGeo.instanceCount = Math.floor(FLURRY * F.n);
+    fu2.uShape.value = F.shape; fu2.uSize.value = F.size; fu2.uFall.value = F.speed; fu2.uSway.value = F.sway; fu2.uWind.value.set(...F.wind);
+    fu2.uC1.value.set(F.c[0]); fu2.uC2.value.set(F.c[1]); fu2.uC3.value.set(F.c[2]);
+    fu2.uLight.value = isDay ? 1.05 : (F.shape === 2 ? 0.55 : 0.35);
+  }
+  // post
   ink.uniforms.uOutline.value = M.outline; ink.uniforms.uLineColor.value.copy(M.line);
   grade.uniforms.uDay.value = isDay ? 1 : 0;
-  if (isDay) for (const l of pool) { l.userData.src = null; l.intensity = 0; }
+  grade.uniforms.uTint.value.set(...(isDay ? S.tint : [1, 1, 1]));
+  if (isDay) resetPool();
   modeBtn.textContent = isDay ? '☾ NIGHT' : '☀ DAY';
+  locBtn.textContent = V ? '🏙 TOKYO' : '🗻 FUJI VILLAGE';
+  document.querySelectorAll('#seasons button').forEach(b => b.classList.toggle('on', b.dataset.s === season));
+  setAmbience();
 }
-const modeBtn = document.getElementById('mode');
-const fadeEl = document.getElementById('fade');
-function toggleMode() {
-  fadeEl.style.background = isDay ? '#05070d' : '#ffffff';
-  fadeEl.classList.add('on');
-  setTimeout(() => { isDay = !isDay; applyMode(); fadeEl.classList.remove('on'); }, 350);
+let paintedFor = null;
+
+const modeBtn = document.getElementById('mode'), locBtn = document.getElementById('loc');
+const fadeEl = document.getElementById('fade'), cardEl = document.getElementById('card');
+let cardTimer = 0;
+function showCard() {
+  if (!started) return;
+  const S = SEASONS[season];
+  cardEl.querySelector('.k').textContent = (loc === 'village' ? '富士' : '東京') + '・' + S.kanji;
+  cardEl.querySelector('.t').textContent = `${L().name} — ${S.name}${isDay ? '' : ' · NIGHT'}`;
+  cardEl.classList.add('show'); clearTimeout(cardTimer); cardTimer = setTimeout(() => cardEl.classList.remove('show'), 3200);
 }
+function transition(color, fn) {
+  fadeEl.style.background = color; fadeEl.classList.add('on');
+  setTimeout(() => { fn(); applyMode(); fadeEl.classList.remove('on'); showCard(); }, 360);
+}
+function toggleMode() { transition(isDay ? '#05070d' : '#ffffff', () => { isDay = !isDay; }); }
+function setSeason(s) { if (s !== season) transition('#ffffff', () => { season = s; }); }
+function setLocation(name) {
+  loc = name; const D = LOCS[name];
+  tokyo.visible = name === 'tokyo'; village.visible = name === 'village'; fuji.visible = name === 'village';
+  SUN_DIR.copy(D.sun);
+  player.pos.copy(D.spawn); player.pos.y = D.groundY(D.spawn.x, D.spawn.z); player.heading = D.heading; player.speed = 0;
+  cam.yaw = D.heading - Math.PI; cam.pitch = 0.14;
+  camTarget.copy(player.pos).setY(player.pos.y + CAM_H);
+  camera.position.set(player.pos.x, player.pos.y + 3, player.pos.z + 6);
+  resetPool();
+}
+function switchLocation() { transition('#ffffff', () => setLocation(loc === 'tokyo' ? 'village' : 'tokyo')); }
 modeBtn.onclick = toggleMode;
-applyMode();
+locBtn.onclick = switchLocation;
+document.querySelectorAll('#seasons button').forEach(b => b.onclick = () => setSeason(b.dataset.s));
 
 /* =====================================================================
    UI
    ===================================================================== */
-const statusEl = document.getElementById('status'), enterBtn = document.getElementById('enter');
+const statusEl = document.getElementById('status'), enterBtn = document.getElementById('enter'), enter2Btn = document.getElementById('enter2');
 function status(t) { statusEl.textContent = t; }
 document.getElementById('hints').innerHTML = IS_TOUCH
-  ? 'LEFT THUMB — drag to walk (push far to run)<br>RIGHT THUMB — swipe to look around'
-  : 'WASD / ARROWS — walk · SHIFT — run · N — day / night<br>CLICK, then MOVE MOUSE — look (Esc frees cursor) · Q / E — turn view · SCROLL — zoom · GAMEPAD';
-document.getElementById('help').textContent = IS_TOUCH ? 'LEFT: MOVE · RIGHT: LOOK' : 'CLICK + MOVE MOUSE TO LOOK · Q/E TURN · WASD MOVE · SHIFT RUN';
+  ? 'LEFT THUMB — drag to walk (push far to run)<br>RIGHT THUMB — swipe to look around · buttons above: place, season, day/night'
+  : 'WASD — walk · SHIFT — run · CLICK + MOVE MOUSE — look · SCROLL — zoom<br>1–4 — season · N — day / night · V — Tokyo ⇄ Fuji village · C — cinema bars · GAMEPAD';
+document.getElementById('help').textContent = IS_TOUCH ? 'LEFT: MOVE · RIGHT: LOOK' : 'CLICK + MOVE MOUSE TO LOOK · WASD MOVE · 1–4 SEASON · N NIGHT · V TRAVEL';
 let started = false;
-enterBtn.onclick = () => {
+function start(where) {
+  if (where !== loc) setLocation(where);
+  applyMode();
   started = true;
   document.getElementById('intro').classList.add('hide');
   document.getElementById('snd').style.display = 'block';
   document.getElementById('help').classList.add('show');
+  document.body.classList.add('cine');
   setTimeout(() => document.getElementById('help').classList.remove('show'), 9000);
-  startAudio(); canvas.focus();
+  startAudio(); canvas.focus(); nextPhrase = now + 3;
+  setTimeout(showCard, 900);
   if (IS_TOUCH && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
-};
+}
+enterBtn.onclick = () => start('tokyo');
+enter2Btn.onclick = () => start('village');
 status('Loading character…');
-charReady.then(() => { status(''); enterBtn.disabled = false; });
+charReady.then(() => { status(''); enterBtn.disabled = enter2Btn.disabled = false; });
 
 /* =====================================================================
    MAIN LOOP
    ===================================================================== */
-window.__app = { THREE, scene, camera, renderer, composer, player, cam, mirror, ground, toggleMode };   // handy for debugging in DevTools
 const clock = new THREE.Clock();
-const camTarget = player.pos.clone().add(new V3(0, 1.45, 0));
+const camTarget = player.pos.clone().add(new V3(0, 1.35, 0));
 const desired = new V3(), tmp = new V3(), sunProj = new V3(), camFwd = new V3();
-camera.position.set(player.pos.x, 3, player.pos.z + 6);
+setLocation('tokyo');
+applyMode();
+window.__app = { THREE, scene, camera, renderer, composer, player, cam, mirror, lake, ground, toggleMode, setSeason, setLocation: n => transition('#fff', () => setLocation(n)), get vrm() { return vrm; } };   // handy for debugging in DevTools
 let poolTimer = 0, nextBolt = 7, flash = 0, flicker = 0, frame = 0, sunVis = 0;
 
 function update(dt, t) {
+  const D = L();
   // ---- movement ----
   const inp = started ? readInput(dt) : { x: 0, y: 0, run: false, analog: false };
   const mag = Math.min(1, Math.hypot(inp.x, inp.y));
@@ -1053,9 +1894,16 @@ function update(dt, t) {
   const target = moving ? (inp.run ? RUN_SPEED : WALK_SPEED) * (inp.analog && !inp.run ? clamp(mag * 1.25, 0.4, 1) : 1) : 0;
   player.speed = damp(player.speed, target, moving ? 6 : 10, dt);
   if (moving) player.heading = lerpAngle(player.heading, Math.atan2(dirX, dirZ), 1 - Math.exp(-dt * 10));
+  const ox = player.pos.x, oz = player.pos.z;
   player.pos.x += Math.sin(player.heading) * player.speed * dt;
   player.pos.z += Math.cos(player.heading) * player.speed * dt;
+  if (D.walkable && !D.walkable(player.pos.x, player.pos.z)) {          // keep out of the lake (slide along the shore)
+    if (D.walkable(player.pos.x, oz)) player.pos.z = oz;
+    else if (D.walkable(ox, player.pos.z)) player.pos.x = ox;
+    else { player.pos.x = ox; player.pos.z = oz; }
+  }
   collide(player.pos, 0.35);
+  player.pos.y = damp(player.pos.y, D.groundY(player.pos.x, player.pos.z), 14, dt);
   charRoot.position.copy(player.pos); charRoot.rotation.y = player.heading;
 
   // camera swings behind the player while walking (forward or sideways) unless the player is steering the view
@@ -1065,64 +1913,60 @@ function update(dt, t) {
   }
   if (!started) cam.yaw = Math.sin(t * 0.08) * 0.35;
 
-  // ---- animation blending ----
+  // ---- character animation ----
   const s = player.speed;
-  const tw = s < 0.1 ? { idle: 1, walk: 0, run: 0 } : s <= WALK_SPEED
-    ? { idle: 1 - s / WALK_SPEED, walk: s / WALK_SPEED, run: 0 }
-    : { idle: 0, walk: 1 - (s - WALK_SPEED) / (RUN_SPEED - WALK_SPEED), run: (s - WALK_SPEED) / (RUN_SPEED - WALK_SPEED) };
-  if (mixer) {
-    for (const k in actions) { weights[k] = damp(weights[k], tw[k], 10, dt); actions[k].setEffectiveWeight(weights[k]); }
-    if (actions.walk) actions.walk.timeScale = clamp(s / WALK_SPEED, 0.6, 1.4);
-    if (actions.run) actions.run.timeScale = clamp(s / RUN_SPEED, 0.7, 1.2);
-    mixer.update(dt);
-  } else if (fallback) {
+  if (vrm) animateChar(dt, t, s);
+  else if (fallback) {
     fallback.t += dt * (2 + s * 2.2); const sw = Math.sin(fallback.t) * Math.min(1, s / 2) * 0.7;
     fallback.legs[0].rotation.x = sw; fallback.legs[1].rotation.x = -sw; fallback.arms[0].rotation.x = -sw; fallback.arms[1].rotation.x = sw;
   }
 
   // ---- camera ----
-  camTarget.lerp(tmp.copy(player.pos).setY(1.45), 1 - Math.exp(-dt * 10));
+  camTarget.lerp(tmp.copy(player.pos).setY(player.pos.y + CAM_H), 1 - Math.exp(-dt * 10));
   const cp = Math.cos(cam.pitch);
   desired.set(camTarget.x + Math.sin(cam.yaw) * cp * cam.dist, camTarget.y + Math.sin(cam.pitch) * cam.dist, camTarget.z + Math.cos(cam.yaw) * cp * cam.dist);
   desired.y += Math.sin(t * 1.3) * 0.04 + Math.abs(Math.sin(t * 5.5)) * Math.min(1, s / 4) * 0.05;   // handheld sway + footstep bob
-  collide(desired, 0.3); desired.y = Math.max(0.35, desired.y);
+  collide(desired, 0.3); desired.y = Math.max(D.groundY(desired.x, desired.z) + 0.4, desired.y);
   camera.position.lerp(desired, 1 - Math.exp(-dt * 12));
   camera.lookAt(camTarget);
-  keyLight.position.copy(player.pos).lerp(camera.position, 0.35).setY(2.8);
-  sky.position.copy(camera.position);
+  keyLight.position.copy(player.pos).lerp(camera.position, 0.35).setY(player.pos.y + 2.8);
+  skyGroup.position.copy(camera.position);
 
   // ---- sun, shadows, lens flare ----
   sun.position.copy(player.pos).addScaledVector(SUN_DIR, 150); sun.target.position.copy(player.pos);
   if (renderer.shadowMap.enabled) renderer.shadowMap.needsUpdate = isDay;
   sunProj.copy(camera.position).addScaledVector(SUN_DIR, 250).project(camera);
   const facing = camera.getWorldDirection(camFwd).dot(SUN_DIR) > 0.2;
-  sunVis = damp(sunVis, isDay && facing && Math.abs(sunProj.x) < 1.2 && Math.abs(sunProj.y) < 1.2 ? 1 : 0, 6, dt);
+  sunVis = damp(sunVis, isDay && season !== 'winter' && facing && Math.abs(sunProj.x) < 1.2 && Math.abs(sunProj.y) < 1.2 ? 1 : 0, 6, dt);
   ink.uniforms.uSunUV.value.set(sunProj.x * 0.5 + 0.5, sunProj.y * 0.5 + 0.5); ink.uniforms.uSunVis.value = sunVis;
   skyMat.uniforms.uTime.value = t;
 
-  // ---- rain, ripples ----
+  // ---- weather ----
   rainMat.uniforms.uTime.value = t % 1000; rainMat.uniforms.uCenter.value.copy(camera.position);
   ripMat.uniforms.uTime.value = t; ripMat.uniforms.uCenter.value.copy(player.pos);
+  flMat.uniforms.uTime.value = t % 1000; flMat.uniforms.uCenter.value.copy(camera.position);
+  lake.material.uniforms.uTime.value = t;
+  boat.position.y = 0.12 + Math.sin(t * 0.9) * 0.05; boat.rotation.z = Math.sin(t * 0.7) * 0.04; boat.rotation.x = Math.sin(t * 0.5) * 0.02;
 
-  // ---- neon light pool (night only) ----
+  // ---- pooled lights (night only) ----
   if (!isDay) {
-    if ((poolTimer -= dt) <= 0) { poolTimer = 0.25; updatePool(player.pos); }
+    if ((poolTimer -= dt) <= 0) { poolTimer = 0.25; updatePool(player.pos, D.lights); }
     for (const l of pool) { const src = l.userData.src; if (src) l.color.copy(src.c); l.intensity = damp(l.intensity, src ? src.i : 0, 4, dt); }
   }
 
-  // ---- video screens (redraw every other frame) ----
-  if (frame++ % 2 === 0) screenCanvases.forEach((c, v) => {
-    const hue = drawScreen(c.getContext('2d'), c.width, c.height, t, v); screenTex[v].needsUpdate = true;
-    for (const sl of screenLights) if (sl.v === v) sl.c.setHSL(hue / 360, 0.85, 0.55);
-  });
+  // ---- Tokyo only: video screens, flickering neon, aviation lights ----
+  if (loc === 'tokyo') {
+    if (frame++ % 2 === 0) screenCanvases.forEach((c, v) => {
+      const hue = drawScreen(c.getContext('2d'), c.width, c.height, t, v); screenTex[v].needsUpdate = true;
+      for (const sl of screenLights) if (sl.v === v) sl.c.setHSL(hue / 360, 0.85, 0.55);
+    });
+    flicker -= dt; if (flicker < -rr(2, 6)) flicker = rr(0.2, 0.6);
+    if (!isDay) vMats[3].color.setScalar(flicker > 0 && Math.random() < 0.5 ? 0.15 : MODES.night.signNeon);
+    aviMat.color.setRGB(Math.sin(t * 3) > 0.3 ? 4 : 0.15, 0, 0);
+  }
 
-  // ---- flickering neon + blinking aviation lights ----
-  flicker -= dt; if (flicker < -rr(2, 6)) flicker = rr(0.2, 0.6);
-  if (!isDay) vMats[3].color.setScalar(flicker > 0 && Math.random() < 0.5 ? 0.15 : MODES.night.signNeon);
-  aviMat.color.setRGB(Math.sin(t * 3) > 0.3 ? 4 : 0.15, 0, 0);
-
-  // ---- lightning (night storm) ----
-  if (!isDay && t > nextBolt) {
+  // ---- lightning (rainy nights) ----
+  if (!isDay && season === 'rainy' && t > nextBolt) {
     nextBolt = t + rr(9, 22); flash = 1;
     const dist = Math.random(); setTimeout(() => thunder(dist), 500 + dist * 2200);
   }
@@ -1132,6 +1976,7 @@ function update(dt, t) {
   hemi.intensity = M.hemi[2] + f * 7; moon.intensity = M.moonI + f * 5;
   scene.fog.color.copy(baseFog).lerp(FLASH_FOG, f * 0.7); skyMat.uniforms.uHor.value.copy(scene.fog.color);
   rainMat.uniforms.uFlash.value = f * 0.6; grade.uniforms.uFlash.value = f * 0.4; grade.uniforms.uTime.value = t;
+  audioTick(t);
 }
 
 renderer.setAnimationLoop(() => {
